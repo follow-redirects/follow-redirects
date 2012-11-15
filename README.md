@@ -31,8 +31,7 @@ http.get('http://bit.ly/900913', function (res) {
  * You can optionnally pass the maxRedirect option which defaults to 5
  */
 
-http.request({
-  type: 'https',
+https.request({
   host: 'bitly.com',
   path: '/UHfDGO',
   maxRedirects: 3
