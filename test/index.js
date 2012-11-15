@@ -3,8 +3,10 @@ var https = require('../').https,
   nativeHttps = require('https'),
   nativeHttp = require('http');
 
+require('colors');
+
 var urls = [
-  'http://bit.ly/900913',
+  //'http://bit.ly/900913',
   {
     type: 'https',
     host: 'bitly.com',
@@ -21,7 +23,7 @@ var libs = {
     follow: http
   },
   https: {
-    native: nativeHttps,
+    //native: nativeHttps,
     follow: https
   }
 };
@@ -37,9 +39,13 @@ urls.forEach(function (url) {
   }
   for (var key in libs[proto]) {
     var lib = libs[proto][key];
+    /**
+     * Test .get
+     */
+    console.log((proto + '.' + 'get(' + url + ')').blue);
     lib.get(url, function(res) {
-      console.log("statusCode: ", res.statusCode);
-      console.log("headers: ", res.headers);
+      console.log('statusCode: ', res.statusCode);
+      console.log('headers: ', res.headers);
 
       res.on('data', function(d) {
         process.stdout.write(d);
@@ -48,5 +54,24 @@ urls.forEach(function (url) {
     }).on('error', function(e) {
       console.error(e);
     });
+
+    /**
+     * Test .request
+     */
+    //console.log((proto + '.' + 'request(' + url + ')').blue);
+    //var req = http.request(url, function(res) {
+      ////console.log('STATUS: ' + res.statusCode);
+      ////console.log('HEADERS: ' + JSON.stringify(res.headers));
+      //res.setEncoding('utf8');
+      //res.on('data', function (chunk) {
+        //console.log('BODY: ' + chunk);
+      //});
+    //});
+
+    //req.on('error', function(e) {
+      //console.log('problem with request: ' + e.message);
+    //});
+
+    //req.end();
   };
 });
