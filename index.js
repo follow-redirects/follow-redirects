@@ -23,9 +23,11 @@ for (var protocol in protocols) {
 
     redirectOptions = redirectOptions || {};
 
+    var max = (typeof options === 'object' && 'maxRedirects' in options) ? options.maxRedirects : maxRedirects;
+
     var redirect = _.extend({
       count: 0,
-      max: options.maxRedirects || maxRedirects,
+      max: max,
       clientRequest: null,
       userCallback: callback
     }, redirectOptions);

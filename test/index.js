@@ -10,7 +10,8 @@ var urls = [
   {
     type: 'https',
     host: 'bitly.com',
-    path: '/UHfDGO'
+    path: '/UHfDGO',
+    maxRedirects: 3
   }
 ];
 
