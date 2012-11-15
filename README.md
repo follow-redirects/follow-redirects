@@ -1,7 +1,18 @@
 `follow-redirects` extends http and https with the ability to follow
 HTTP redirects painlessly. It does not modify the native modules but
 instead offers its own http/https modules which inherit from the native
-modules.
+modules. If you want to automatically follow redirects, all you need to
+do is replace: 
+
+```javascript
+var http = require('http');
+```
+
+by
+
+```javascript
+var http = require('follow-redirects').http;
+```
 
 # Install
 
