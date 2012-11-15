@@ -8,8 +8,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:olalonde/url-chain.git"
+    "url": "git@github.com:olalonde/follow-redirects.git"
   },
+  "homepage": "",
   "keywords": [
     "http",
     "https",
@@ -23,6 +24,12 @@
     "name": "Olivier Lalonde"
     , "email": "olalonde@gmail.com"
     , "url": "http://www.syskall.com"
+  },
+  "dependencies": {
+    "underscore": ""
+  },
+  "devDependencies": {
+    "colors": ""
   },
   "license": "BSD"
 }
