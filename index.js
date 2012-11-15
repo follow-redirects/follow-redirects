@@ -84,7 +84,7 @@ for (var protocol in protocols) {
         // we need to call the right api (http vs https) depending on protocol
         var proto = url.parse(redirectUrl).protocol;
         proto = proto.substr(0, proto.length - 1);
-        console.log('Redirecting from ' + reqUrl + ' to ' + redirectUrl);
+        //console.log('Redirecting from ' + reqUrl + ' to ' + redirectUrl);
         return module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
       };
     }
