@@ -3,7 +3,7 @@ var nativeHttps = require('https'),
   url = require('url'),
   _ = require('underscore');
 
-var maxRedirects = module.exports.maxRedirects = 1;
+var maxRedirects = module.exports.maxRedirects = 5;
 
 var protocols = {
   https: nativeHttps,
@@ -23,7 +23,7 @@ for (var protocol in protocols) {
 
     redirectOptions = redirectOptions || {};
 
-    var max = (typeof options === 'object' && 'maxRedirects' in options) ? options.maxRedirects : maxRedirects;
+    var max = (typeof options === 'object' && 'maxRedirects' in options) ? options.maxRedirects : exports.maxRedirects;
 
     var redirect = _.extend({
       count: 0,
@@ -32,6 +32,8 @@ for (var protocol in protocols) {
       userCallback: callback
     }, redirectOptions);
 
+    //console.log(redirect.count);
+    //console.log(redirect.max);
     /**
      * Emit error if too many redirects
      */

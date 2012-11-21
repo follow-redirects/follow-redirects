@@ -6,21 +6,23 @@ var https = require('../').https,
 require('colors');
 
 var urls = [
-  //'http://bit.ly/900913',
+  'http://bit.ly/900913'
+  /*,
   {
     type: 'https',
     host: 'bitly.com',
     path: '/UHfDGO',
-    maxRedirects: 3
+    maxRedirects: 10
   }
+ */
 ];
 
-http.maxRedirects = 5;
+require('../').maxRedirects = 6;
 
 
 var libs = {
   http: {
-    native: nativeHttp,
+    //native: nativeHttp,
     follow: http
   },
   https: {
@@ -45,11 +47,12 @@ urls.forEach(function (url) {
      */
     console.log((proto + '.' + 'get(' + url + ')').blue);
     lib.get(url, function(res) {
-      console.log('statusCode: ', res.statusCode);
-      console.log('headers: ', res.headers);
+      //console.log('statusCode: ', res.statusCode);
+      //console.log('headers: ', res.headers);
 
       res.on('data', function(d) {
-        process.stdout.write(d);
+        console.log(('Data received ').red);
+        console.log(d.toString());
       });
 
     }).on('error', function(e) {
@@ -59,20 +62,20 @@ urls.forEach(function (url) {
     /**
      * Test .request
      */
-    console.log((proto + '.' + 'request(' + url + ')').blue);
-    var req = http.request(url, function(res) {
-      //console.log('STATUS: ' + res.statusCode);
-      //console.log('HEADERS: ' + JSON.stringify(res.headers));
-      res.setEncoding('utf8');
-      res.on('data', function (chunk) {
-        console.log('BODY: ' + chunk);
-      });
-    });
+    //console.log((proto + '.' + 'request(' + url + ')').blue);
+    //var req = http.request(url, function(res) {
+      ////console.log('STATUS: ' + res.statusCode);
+      ////console.log('HEADERS: ' + JSON.stringify(res.headers));
+      //res.setEncoding('utf8');
+      //res.on('data', function (chunk) {
+        //console.log('BODY: ' + chunk);
+      //});
+    //});
 
-    req.on('error', function(e) {
-      console.log('problem with request: ' + e.message);
-    });
+    //req.on('error', function(e) {
+      //console.log('problem with request: ' + e.message);
+    //});
 
-    req.end();
+    //req.end();
   };
 });
