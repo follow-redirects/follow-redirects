@@ -62,20 +62,21 @@ urls.forEach(function (url) {
     /**
      * Test .request
      */
-    //console.log((proto + '.' + 'request(' + url + ')').blue);
-    //var req = http.request(url, function(res) {
-      ////console.log('STATUS: ' + res.statusCode);
-      ////console.log('HEADERS: ' + JSON.stringify(res.headers));
-      //res.setEncoding('utf8');
-      //res.on('data', function (chunk) {
-        //console.log('BODY: ' + chunk);
-      //});
-    //});
+    console.log((proto + '.' + 'request(' + url + ')').blue);
+    var request = http.request;
+    var req = request(url, function(res) {
+      //console.log('STATUS: ' + res.statusCode);
+      //console.log('HEADERS: ' + JSON.stringify(res.headers));
+      res.setEncoding('utf8');
+      res.on('data', function (chunk) {
+        console.log('BODY: ' + chunk);
+      });
+    });
 
-    //req.on('error', function(e) {
-      //console.log('problem with request: ' + e.message);
-    //});
+    req.on('error', function(e) {
+      console.log('problem with request: ' + e.message);
+    });
 
-    //req.end();
+    req.end();
   };
 });
