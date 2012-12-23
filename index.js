@@ -90,7 +90,14 @@ for (var protocol in protocols) {
           var proto = url.parse(redirectUrl).protocol;
           proto = proto.substr(0, proto.length - 1);
           //console.log('Redirecting from ' + reqUrl + ' to ' + redirectUrl);
-          return module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
+
+          var out = module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
+          
+          // bubble errors that occur on the redirect back up to the initiating client request
+          // object, otherwise they wind up killing the process.
+          out.on("error", function(err) { clientRequest.emit("error", err) });
+
+          return out;
         };
       }
 
