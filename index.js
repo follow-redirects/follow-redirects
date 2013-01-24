@@ -33,8 +33,6 @@ for (var protocol in protocols) {
         userCallback: callback
       }, redirectOptions);
 
-      //console.log(redirect.count);
-      //console.log(redirect.max);
       /**
        * Emit error if too many redirects
        */
@@ -72,13 +70,11 @@ for (var protocol in protocols) {
         return function (res) {
           // status must be 300-399 for redirects
           if (res.statusCode < 300 || res.statusCode > 399) {
-            //console.log('[' + res.statusCode + '] callback user on url ' + reqUrl);
             return redirect.userCallback(res);
           }
 
           // no `Location:` header => nowhere to redirect
           if (!('location' in res.headers)) {
-            //console.log('[no location header] callback user on url ' + reqUrl);
             return redirect.userCallback(res);
           }
 
@@ -89,22 +85,20 @@ for (var protocol in protocols) {
           // we need to call the right api (http vs https) depending on protocol
           var proto = url.parse(redirectUrl).protocol;
           proto = proto.substr(0, proto.length - 1);
-          //console.log('Redirecting from ' + reqUrl + ' to ' + redirectUrl);
 
-            // Super imslavko hack: parse ready Url
-            var searchname = url.parse(redirectUrl).search;
-            var hostname = url.parse(redirectUrl).hostname;
-            var pathname = url.parse(redirectUrl).pathname;
+          // Make a new option object for next request from old options object
+          // Break url in parts
+          var searchname = url.parse(redirectUrl).search;
+          var hostname = url.parse(redirectUrl).hostname;
+          var pathname = url.parse(redirectUrl).pathname;
 
-            var redirectOptions = options;
-            redirectOptions.reqUrl = redirectUrl;
-            redirectOptions.hostname = hostname;
-            redirectOptions.path = pathname + searchname;
+          var redirectOptions = options;
+          redirectOptions.reqUrl = redirectUrl;
+          redirectOptions.hostname = hostname;
+          redirectOptions.path = pathname + searchname;
 
-            var out = module.exports[proto].get(redirectOptions, redirectCallback(reqUrl, redirect), redirect);
+          var out = module.exports[proto].get(redirectOptions, redirectCallback(reqUrl, redirect), redirect);
 
-//            var out = module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
-          
           // bubble errors that occur on the redirect back up to the initiating client request
           // object, otherwise they wind up killing the process.
           out.on("error", function(err) { clientRequest.emit("error", err) });
