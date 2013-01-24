@@ -91,7 +91,19 @@ for (var protocol in protocols) {
           proto = proto.substr(0, proto.length - 1);
           //console.log('Redirecting from ' + reqUrl + ' to ' + redirectUrl);
 
-          var out = module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
+            // Super imslavko hack: parse ready Url
+            var searchname = url.parse(redirectUrl).search;
+            var hostname = url.parse(redirectUrl).hostname;
+            var pathname = url.parse(redirectUrl).pathname;
+
+            var redirectOptions = options;
+            redirectOptions.reqUrl = redirectUrl;
+            redirectOptions.hostname = hostname;
+            redirectOptions.path = pathname + searchname;
+
+            var out = module.exports[proto].get(redirectOptions, redirectCallback(reqUrl, redirect), redirect);
+
+//            var out = module.exports[proto].get(redirectUrl, redirectCallback(reqUrl, redirect), redirect);
           
           // bubble errors that occur on the redirect back up to the initiating client request
           // object, otherwise they wind up killing the process.
