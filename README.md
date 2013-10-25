@@ -55,3 +55,7 @@ https.request({
 });
 
 ```
+
+## License
+
+MIT: [http://olalonde.mit-license.org](http://olalonde.mit-license.org)
