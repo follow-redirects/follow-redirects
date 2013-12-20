@@ -78,6 +78,10 @@ for (var protocol in protocols) {
             return redirect.userCallback(res);
           }
 
+          // we are going to follow the redirect, but in node 0.10 we must first attach a data listener
+          // to consume the stream and send the 'end' event
+          res.on('data', function() {});
+
           // save the original clientRequest to our redirectOptions so we can emit errors later
 
           // need to use url.resolve() in case location is a relative URL
