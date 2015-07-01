@@ -9,11 +9,12 @@ describe('follow-redirects', function() {
   var https = followRedirects.https;
   var Promise = require('bluebird');
 
-  var app, originalMaxRedirects;
+  var app, app2, originalMaxRedirects;
 
   beforeEach(function(){
     originalMaxRedirects = followRedirects.maxRedirects;
     app = express();
+    app2 = express();
   });
 
   afterEach(function(done) {
@@ -117,7 +118,7 @@ describe('follow-redirects', function() {
   });
 
   it('will report an error', function(done) {
-     app.get('/a', redirectsTo('http://localhost:36002/b'));
+    app.get('/a', redirectsTo('http://localhost:36002/b'));
 
     server.start(app)
       .then(asPromise(function(resolve, reject){
@@ -125,6 +126,60 @@ describe('follow-redirects', function() {
       }))
       .then(function(error) {
         assert.equal(error.code, 'ECONNREFUSED');
+      })
+      .nodeify(done);
+  });
+
+  it('works using https', function(done) {
+    app.get('/a', redirectsTo('/b'));
+    app.get('/b', redirectsTo('/c'));
+    app.get('/c', sendsJson({baz:'quz'}));
+
+    server.start(app, 'https')
+      .then(asPromise(function(resolve, reject){
+        var opts = url.parse('https://localhost:3601/a');
+        server.addClientCerts(opts);
+        https.get(opts, resolve).on('error', reject);
+      }))
+      .then(concatJson)
+      .then(function(json) {
+        assert.deepEqual(json, {baz:'quz'});
+      })
+      .nodeify(done);
+  });
+
+  it('https -> http -> https', function(done) {
+    app.get('/a', redirectsTo('http://localhost:3600/b'));
+    app2.get('/b', redirectsTo('https://localhost:3601/c'));
+    app.get('/c', sendsJson({yes:'no'}));
+
+    Promise.all([server.start(app,'https'), server.start(app2)])
+      .then(asPromise(function(resolve, reject){
+        var opts = url.parse('https://localhost:3601/a');
+        server.addClientCerts(opts);
+        https.get(opts, resolve).on('error', reject);
+      }))
+      .then(concatJson)
+      .then(function(json) {
+        assert.deepEqual(json, {yes:'no'});
+      })
+      .nodeify(done);
+  });
+
+  it('http -> https -> http', function(done) {
+    app.get('/a', redirectsTo('https://localhost:3601/b'));
+    app2.get('/b', redirectsTo('http://localhost:3600/c'));
+    app.get('/c', sendsJson({hello:'goodbye'}));
+
+    Promise.all([server.start(app), server.start(app2, 'https')])
+      .then(asPromise(function(resolve, reject){
+        var opts = url.parse('http://localhost:3600/a');
+        server.addClientCerts(opts);
+        http.get(opts, resolve).on('error', reject);
+      }))
+      .then(concatJson)
+      .then(function(json) {
+        assert.deepEqual(json, {hello:'goodbye'});
       })
       .nodeify(done);
   });

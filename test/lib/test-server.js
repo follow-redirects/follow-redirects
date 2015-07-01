@@ -1,24 +1,31 @@
 // provides boilerplate for managing http and https servers during tests
 
-module.exports = {
-  start: start,
-  stop: stop
-};
-
 var Promise = require('bluebird');
-
-var protos = {
-  http :require('http'),
-  https: require('https')
-};
+var http = require('http');
+var https = require('https');
+var fs = require('fs');
 
 var servers = {};
 
+var httpsOptions = {
+  ca : [fs.readFileSync(__dirname + '/testing-CA.crt')],
+  cert: fs.readFileSync(__dirname + '/testing-server.crt'),
+  key: fs.readFileSync(__dirname + '/testing-server.pem')
+};
+
+var serverPorts = {
+  http: 3600,
+  https: 3601
+};
+
 function start(app, proto){
+  proto = proto || 'http';
+  if (proto !== 'http' && proto !== 'https') {
+    throw new Error('proto must be null, http, or https. got: ' + proto);
+  }
   return Promise.fromNode(function (callback) {
-    proto = proto || 'http';
-    servers[proto] = protos[proto].createServer(app);
-    servers[proto].listen(3600, callback);
+    servers[proto] = proto === 'http' ? http.createServer(app) : https.createServer(httpsOptions, app);
+    servers[proto].listen(serverPorts[proto], callback);
   });
 }
 
@@ -35,3 +42,20 @@ function _stop(proto) {
     servers[proto] = null;
   });
 }
+
+function addClientCerts(opts) {
+  opts.agent = false;
+  opts.rejectUnauthorized = false;
+
+  // TODO: Add custom CA to whitelist and set `rejectUnauthrized` back to true
+  // the following does not work
+  //opts.ca = fs.readFileSync(__dirname + '/testing-CA.crt');
+  //opts.cert = fs.readFileSync(__dirname + '/testing-client.crt');
+  //opts.key = fs.readFileSync(__dirname + '/testing-client.pem');
+}
+
+module.exports = {
+  start: start,
+  stop: stop,
+  addClientCerts: addClientCerts
+};
