@@ -1,7 +1,8 @@
 var nativeHttps = require('https'),
   nativeHttp = require('http'),
   url = require('url'),
-  _ = require('underscore');
+  _ = require('underscore'),
+  debug = require('debug')('follow-redirects');
 
 var maxRedirects = module.exports.maxRedirects = 5;
 
@@ -47,7 +48,7 @@ for (var protocol in protocols) {
       /**
        * Parse URL from options
        */
-      var reqUrl;
+      var reqUrl, method;
       if (typeof options === 'string') {
         reqUrl = options;
       }
@@ -58,6 +59,7 @@ for (var protocol in protocols) {
       /*
        * Build client request
        */
+      debug(options);
       var clientRequest = h.__proto__.request(options, redirectCallback(reqUrl, redirect));
 
       // Save user's clientRequest so we can emit errors later
@@ -67,7 +69,10 @@ for (var protocol in protocols) {
        * ClientRequest callback for redirects
        */
       function redirectCallback (reqUrl, redirect) {
+        debug('redirectCallback');
         return function (res) {
+          debug('headers:');
+          debug(res.headers);
           // status must be 300-399 for redirects
           if (res.statusCode < 300 || res.statusCode > 399) {
             return redirect.userCallback(res);
@@ -86,21 +91,24 @@ for (var protocol in protocols) {
 
           // need to use url.resolve() in case location is a relative URL
           var redirectUrl = url.resolve(reqUrl, res.headers['location']);
+          debug('redirectUrl', redirectUrl);
           // we need to call the right api (http vs https) depending on protocol
           var proto = url.parse(redirectUrl).protocol;
           proto = proto.substr(0, proto.length - 1);
 
           // Make a new option object for next request from old options object
           // Break url in parts
-          var searchname = url.parse(redirectUrl).search;
-          var hostname = url.parse(redirectUrl).hostname;
-          var pathname = url.parse(redirectUrl).pathname;
+          var parsedUrl = url.parse(redirectUrl);
+          var searchname = parsedUrl.search || '';
+          var hostname = parsedUrl.hostname;
+          var pathname = parsedUrl.pathname;
 
-          var redirectOptions = options;
+          var redirectOptions = typeof options === 'string' ? {} : options;
           redirectOptions.reqUrl = redirectUrl;
           redirectOptions.hostname = hostname;
           redirectOptions.path = pathname + searchname;
 
+          debug('redirectOptions', redirectOptions);
           var out = module.exports[proto].get(redirectOptions, redirectCallback(reqUrl, redirect), redirect);
 
           // bubble errors that occur on the redirect back up to the initiating client request
