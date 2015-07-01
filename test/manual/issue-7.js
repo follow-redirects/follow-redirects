@@ -1,4 +1,4 @@
-var http = require('../').http;
+var http = require('../../').http;
 
 http.get('http://bit.ly/1bO0scI', function (res) {
   var all = '';

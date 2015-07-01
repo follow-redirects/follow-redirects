@@ -4,7 +4,7 @@
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "BLUEBIRD_DEBUG=1 istanbul cover ./node_modules/.bin/_mocha"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,12 @@
     "underscore": ""
   },
   "devDependencies": {
-    "colors": ""
+    "bluebird": "^2.9.30",
+    "colors": "",
+    "concat-stream": "^1.5.0",
+    "express": "^4.13.0",
+    "istanbul": "^0.3.17",
+    "mocha": "^2.2.5"
   },
   "license": "MIT"
 }
