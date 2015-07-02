@@ -184,6 +184,23 @@ describe('follow-redirects', function() {
       .nodeify(done);
   });
 
+  it('redirect to query params', function(done) {
+    app.get('/a', redirectsTo('/b?greeting=hello'));
+    app.get('/b', function(req, res) {
+      res.json({greeting:req.query.greeting});
+    });
+
+    server.start(app)
+      .then(asPromise(function(resolve, reject){
+        http.get('http://localhost:3600/a', resolve).on('error', reject)
+      }))
+      .then(concatJson)
+      .then(function(json) {
+        assert.deepEqual(json, {greeting:'hello'})
+      })
+      .nodeify(done);
+  });
+
   function redirectsTo(opt_status, path) {
     var args = Array.prototype.slice.call(arguments);
     return function(req, res) {
@@ -203,7 +220,7 @@ describe('follow-redirects', function() {
         try {
           resolve(JSON.parse(string));
         } catch (e) {
-          reject(e);
+          reject(new Error('error parsing ' + JSON.stringify(string) + '\n caused by: ' + e.message));
         }
       })).on('error', reject);
     });
