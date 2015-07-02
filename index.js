@@ -102,10 +102,14 @@ for (var protocol in protocols) {
           var searchname = parsedUrl.search || '';
           var hostname = parsedUrl.hostname;
           var pathname = parsedUrl.pathname;
+          var port = parsedUrl.port;
+          var protocol = parsedUrl.protocol;
 
           var redirectOptions = typeof options === 'string' ? {} : options;
+          redirectOptions.protocol = protocol;
           redirectOptions.reqUrl = redirectUrl;
           redirectOptions.hostname = hostname;
+          redirectOptions.port = port;
           redirectOptions.path = pathname + searchname;
 
           debug('redirectOptions', redirectOptions);

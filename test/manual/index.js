@@ -1,5 +1,5 @@
-var https = require('../').https,
-  http = require('../').http,
+var https = require('../../').https,
+  http = require('../../').http,
   nativeHttps = require('https'),
   nativeHttp = require('http');
 
@@ -17,7 +17,7 @@ var urls = [
  */
 ];
 
-require('../').maxRedirects = 6;
+require('../../').maxRedirects = 6;
 
 
 var libs = {
