@@ -28,10 +28,10 @@
     "email": "olalonde@gmail.com",
     "url": "http://www.syskall.com"
   },
-  "contributors" : [
+  "contributors": [
     "James Talmage <james@talmage.io>"
   ],
-  "files" : [
+  "files": [
     "index.js"
   ],
   "dependencies": {
@@ -42,6 +42,7 @@
     "bluebird": "^2.9.30",
     "colors": "",
     "concat-stream": "^1.5.0",
+    "coveralls": "^2.11.2",
     "express": "^4.13.0",
     "istanbul": "^0.3.17",
     "mocha": "^2.2.5"
