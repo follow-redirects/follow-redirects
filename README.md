@@ -56,6 +56,11 @@ https.request({
 
 ```
 
+## Authors
+
+Olivier Lalonde (olalonde@gmail.com)
+James Talmage (james@talmage.io)
+
 ## License
 
 MIT: [http://olalonde.mit-license.org](http://olalonde.mit-license.org)

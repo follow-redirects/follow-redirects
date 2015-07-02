@@ -10,7 +10,10 @@
     "type": "git",
     "url": "git@github.com:olalonde/follow-redirects.git"
   },
-  "homepage": "",
+  "homepage": "https://github.com/olalonde/follow-redirects",
+  "bugs": {
+    "url": "https://github.com/olalonde/follow-redirects/issues"
+  },
   "keywords": [
     "http",
     "https",
@@ -25,6 +28,12 @@
     "email": "olalonde@gmail.com",
     "url": "http://www.syskall.com"
   },
+  "contributors" : [
+    "James Talmage <james@talmage.io>"
+  ],
+  "files" : [
+    "index.js"
+  ],
   "dependencies": {
     "debug": "^2.2.0",
     "underscore": ""
