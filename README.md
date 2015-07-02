@@ -1,3 +1,8 @@
+## Follow Redirects
+Drop in replacement for node `http` and `https` modules that automatically follows HTTP redirects.
+
+[![Build Status](https://travis-ci.org/follow-redirects/follow-redirects.svg?branch=master)](https://travis-ci.org/follow-redirects/follow-redirects)
+
 `follow-redirects` extends http and https with the ability to follow
 HTTP redirects painlessly. It does not modify the native modules but
 instead offers its own http/https modules which inherit from the native
@@ -14,11 +19,11 @@ by
 var http = require('follow-redirects').http;
 ```
 
-# Install
+## Install
 
     npm install follow-redirects
 
-# Usage
+## Usage
 
 ```javascript
 
