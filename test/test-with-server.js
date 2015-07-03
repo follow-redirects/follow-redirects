@@ -36,7 +36,7 @@ describe('follow-redirects ', function() {
         http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
       }))
       .then(function(res) {
-        assert.deepEqual(res.parsedJson, {a:'b'})
+        assert.deepEqual(res.parsedJson, {a:'b'});
       })
       .nodeify(done);
   });
@@ -97,10 +97,10 @@ describe('follow-redirects ', function() {
 
     server.start(app)
       .then(asPromise(function(resolve, reject){
-        http.get('http://localhost:3600/a', concatJson(resolve,reject)).on('error', reject)
+        http.get('http://localhost:3600/a', concatJson(resolve,reject)).on('error', reject);
       }))
       .then(function(res) {
-        assert.deepEqual(res.parsedJson, {greeting:'hello'})
+        assert.deepEqual(res.parsedJson, {greeting:'hello'});
       })
       .nodeify(done);
   });
@@ -140,7 +140,7 @@ describe('follow-redirects ', function() {
           http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
         }))
         .then(function(res) {
-          assert.deepEqual(res.parsedJson, {foo:'bar'})
+          assert.deepEqual(res.parsedJson, {foo:'bar'});
         })
         .nodeify(done);
     });
@@ -204,13 +204,13 @@ describe('follow-redirects ', function() {
     var args = Array.prototype.slice.call(arguments);
     return function(req, res) {
       res.redirect.apply(res, args);
-    }
+    };
   }
 
   function sendsJson(json) {
     return function(req, res) {
       res.json(json);
-    }
+    };
   }
 
   function concatJson(resolve, reject) {
@@ -231,7 +231,7 @@ describe('follow-redirects ', function() {
       return new Promise(function(resolve, reject) {
         cb(resolve, reject, result);
       });
-    }
+    };
   }
 
   function skip8(description, fn) {

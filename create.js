@@ -25,7 +25,7 @@ module.exports = function(_nativeProtocols) {
     var clientRequest;
     var fetchedUrls = [];
 
-    return clientRequest = internalCallBack();
+    return (clientRequest = internalCallBack());
 
     function internalCallBack(res){
       // skip the redirection logic on the first call.
@@ -43,7 +43,7 @@ module.exports = function(_nativeProtocols) {
         res.on('data', function(){});
 
         // need to use url.resolve() in case location is a relative URL
-        var redirectUrl = url.resolve(fetchedUrl, res.headers['location']);
+        var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
         debug('redirecting to', redirectUrl);
 
         // clean all the properties related to the old url away, and copy from the redirect url
@@ -78,17 +78,17 @@ module.exports = function(_nativeProtocols) {
 
   function generateWrapper (scheme, nativeProtocol) {
     var wrappedProtocol = scheme + ':';
-    var h = function() {};
-    h.prototype = nativeProtocols[wrappedProtocol] = nativeProtocol;
-    h = new h();
-    publicApi[scheme] = h;
+    var H = function() {};
+    H.prototype = nativeProtocols[wrappedProtocol] = nativeProtocol;
+    H = new H();
+    publicApi[scheme] = H;
 
-    h.request = function (options, callback) {
+    H.request = function (options, callback) {
       return execute(parseOptions(options, callback, wrappedProtocol));
     };
 
     // see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-    h.get = function(options, callback) {
+    H.get = function(options, callback) {
       options = parseOptions(options, callback, wrappedProtocol);
       var req = execute(options);
       req.end();
