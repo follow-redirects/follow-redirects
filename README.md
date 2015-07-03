@@ -30,7 +30,7 @@ http.get('http://bit.ly/900913', function (res) {
 By default the number of redirects is limited to 5, but you can modify that globally or per request.
 
 ```javascript
-require('follow-redirects).maxRedirects = 10;   // Has global affect (be careful!)
+require('follow-redirects').maxRedirects = 10;   // Has global affect (be careful!)
 
 https.request({
   host: 'bitly.com',
