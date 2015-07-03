@@ -1,6 +1,6 @@
 ## Follow Redirects
 
-Drop in replacement for Nodes `http` and `https` modules that will automatically follow HTTP redirects.
+Drop in replacement for Nodes `http` and `https` that automatically follows redirects.
 
 [![Build Status](https://travis-ci.org/olalonde/follow-redirects.svg?branch=master)](https://travis-ci.org/olalonde/follow-redirects)
 [![Coverage Status](https://coveralls.io/repos/olalonde/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/olalonde/follow-redirects?branch=master)
@@ -54,6 +54,7 @@ Pull Requests are always welcome. Please [file an issue](https://github.com/olal
 ## Authors
 
 Olivier Lalonde (olalonde@gmail.com)
+
 James Talmage (james@talmage.io)
 
 ## License
