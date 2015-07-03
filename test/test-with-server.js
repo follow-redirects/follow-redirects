@@ -37,6 +37,14 @@ describe('follow-redirects ', function() {
       }))
       .then(function(res) {
         assert.deepEqual(res.parsedJson, {a:'b'});
+        assert.deepEqual(res.fetchedUrls, [
+          'http://localhost:3600/f',
+          'http://localhost:3600/e',
+          'http://localhost:3600/d',
+          'http://localhost:3600/c',
+          'http://localhost:3600/b',
+          'http://localhost:3600/a'
+        ]);
       })
       .nodeify(done);
   });
