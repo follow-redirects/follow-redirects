@@ -44,7 +44,6 @@ The array is populated in reverse order, so the original url you requested will 
 last element, while the final redirection point will be at index 0.
 
 ```javascript
-
 https.request({
   host: 'bitly.com',
   path: '/UHfDGO',
@@ -52,6 +51,42 @@ https.request({
   console.log(res.fetchedUrls); 
   // [ 'http://duckduckgo.com/robots.txt',  'http://bitly.com/UHfDGO' ]
 });
+```
+
+## Browserify Usage
+
+Due to the way `XMLHttpRequest` works, the `browserify` versions of `http` and `https` already follow redirects.
+ If you are *only* targetting the browser, then this library has little value for you. If you want to write cross 
+ platform code for node and the browser, `follow-redirects` provides a great solution for making the native node
+ modules behave the same as they do in browserified builds in the browser. To avoid bundling unnecessary code
+ you should tell your browserify build to swap out `follow-redirects` with the standard equivalents when bundling.
+ To make this easier, you need to change how you require the modules:
+
+```javascript
+var http = require('follow-redirects/http');
+var https = require('follow-redirects/https');
+```
+
+You can then replace `follow-redirects` in your browserify configuration like so:
+
+```javascript
+"browser": {
+  "follow-redirects/http"  : "http",
+  "follow-redirects/https" : "https"
+}
+```
+
+The `browserify-http` module has not kept pace with node development, and no long behaves identically to the native
+ module when running in the browser. If you are experiencing problems, you may want to check out
+ [browserify-http-2](https://www.npmjs.com/package/http-browserify-2). It is more actively maintained and 
+ attempts to address a few of the shortcomings of `browserify-http`. In that case, your browserify config should
+ look something like this:
+ 
+```javascript
+"browser": {
+  "follow-redirects/http"  : "browserify-http-2/http",
+  "follow-redirects/https" : "browserify-http-2/https"
+}
 ```
 
 ## Contributing

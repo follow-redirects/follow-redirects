@@ -37,7 +37,9 @@
   ],
   "files": [
     "index.js",
-    "create.js"
+    "create.js",
+    "http.js",
+    "https.js"
   ],
   "dependencies": {
     "debug": "^2.2.0"
