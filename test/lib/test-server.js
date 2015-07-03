@@ -45,13 +45,8 @@ function _stop(proto) {
 }
 
 function addClientCerts(opts) {
-  //opts.agent = false;
-  //opts.rejectUnauthorized = false;
-
-  // TODO: Add custom CA to whitelist and set `rejectUnauthrized` back to true
-  // the following does not work
-
   if (semver.lt(process.version, '0.9.0')) {
+    // Can't figure out on certs on node < 0.9. Just giving up
     opts.rejectUnauthorized = false;
     opts.agent = new https.Agent(opts);
   } else {
