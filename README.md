@@ -39,6 +39,21 @@ https.request({
 }, function (res) {/* ... */});
 ```
 
+You can inspect the redirection chain from the `fetchedUrls` array on the `response`.
+The array is populated in reverse order, so the original url you requested will be the
+last element, while the final redirection point will be at index 0.
+
+```javascript
+
+https.request({
+  host: 'bitly.com',
+  path: '/UHfDGO',
+}, function (res) {
+  console.log(res.fetchedUrls); 
+  // [ 'http://duckduckgo.com/robots.txt',  'http://bitly.com/UHfDGO' ]
+});
+```
+
 ## Contributing
 
 Pull Requests are always welcome. Please [file an issue](https://github.com/olalonde/follow-redirects/issues)
