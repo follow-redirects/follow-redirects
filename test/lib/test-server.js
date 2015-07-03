@@ -9,9 +9,9 @@ var semver = require('semver');
 var servers = {};
 
 var httpsOptions = {
-  ca : [fs.readFileSync(__dirname + '/testing-CA.crt')],
-  cert: fs.readFileSync(__dirname + '/testing-server.crt'),
-  key: fs.readFileSync(__dirname + '/testing-server.pem')
+  //ca : [fs.readFileSync(__dirname + '/TestCA.crt')],
+  cert: fs.readFileSync(__dirname + '/TestServer.crt'),
+  key: fs.readFileSync(__dirname + '/TestServer.pem')
 };
 
 var serverPorts = {
@@ -45,18 +45,21 @@ function _stop(proto) {
 }
 
 function addClientCerts(opts) {
-  opts.agent = false;
-  opts.rejectUnauthorized = false;
+  //opts.agent = false;
+  //opts.rejectUnauthorized = false;
 
   // TODO: Add custom CA to whitelist and set `rejectUnauthrized` back to true
   // the following does not work
-  //opts.ca = fs.readFileSync(__dirname + '/testing-CA.crt');
 
   if (semver.lt(process.version, '0.9.0')) {
+    opts.rejectUnauthorized = false;
     opts.agent = new https.Agent(opts);
+  } else {
+    opts.agent = false;
+    opts.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
+    opts.cert = fs.readFileSync(__dirname + '/TestClient.crt');
+    opts.key = fs.readFileSync(__dirname + '/TestClient.pem');
   }
-  //opts.cert = fs.readFileSync(__dirname + '/testing-client.crt');
-  //opts.key = fs.readFileSync(__dirname + '/testing-client.pem');
 }
 
 module.exports = {
