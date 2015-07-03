@@ -59,7 +59,7 @@ Due to the way `XMLHttpRequest` works, the `browserify` versions of `http` and `
  If you are *only* targetting the browser, then this library has little value for you. If you want to write cross 
  platform code for node and the browser, `follow-redirects` provides a great solution for making the native node
  modules behave the same as they do in browserified builds in the browser. To avoid bundling unnecessary code
- you should tell your browserify build to swap out `follow-redirects` with the standard equivalents when bundling.
+ you should tell browserify to swap out `follow-redirects` with the standard modules when bundling.
  To make this easier, you need to change how you require the modules:
 
 ```javascript
