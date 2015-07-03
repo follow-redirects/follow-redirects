@@ -8,6 +8,7 @@ describe('follow-redirects ', function() {
   var http = followRedirects.http;
   var https = followRedirects.https;
   var Promise = require('bluebird');
+  var semver = require('semver');
 
   var app, app2, originalMaxRedirects;
 
@@ -32,11 +33,18 @@ describe('follow-redirects ', function() {
 
     server.start(app)
       .then(asPromise(function(resolve, reject){
-        http.get('http://localhost:3600/a', resolve).on('error', reject);
+        http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
       }))
-      .then(concatJson)
-      .then(function(json) {
-        assert.deepEqual(json, {a:'b'})
+      .then(function(res) {
+        assert.deepEqual(res.parsedJson, {a:'b'});
+        assert.deepEqual(res.fetchedUrls, [
+          'http://localhost:3600/f',
+          'http://localhost:3600/e',
+          'http://localhost:3600/d',
+          'http://localhost:3600/c',
+          'http://localhost:3600/b',
+          'http://localhost:3600/a'
+        ]);
       })
       .nodeify(done);
   });
@@ -81,11 +89,10 @@ describe('follow-redirects ', function() {
       .then(asPromise(function(resolve, reject){
         var opts = url.parse('https://localhost:3601/a');
         server.addClientCerts(opts);
-        https.get(opts, resolve).on('error', reject);
+        https.get(opts, concatJson(resolve, reject)).on('error', reject);
       }))
-      .then(concatJson)
-      .then(function(json) {
-        assert.deepEqual(json, {baz:'quz'});
+      .then(function(res) {
+        assert.deepEqual(res.parsedJson, {baz:'quz'});
       })
       .nodeify(done);
   });
@@ -98,11 +105,10 @@ describe('follow-redirects ', function() {
 
     server.start(app)
       .then(asPromise(function(resolve, reject){
-        http.get('http://localhost:3600/a', resolve).on('error', reject)
+        http.get('http://localhost:3600/a', concatJson(resolve,reject)).on('error', reject);
       }))
-      .then(concatJson)
-      .then(function(json) {
-        assert.deepEqual(json, {greeting:'hello'})
+      .then(function(res) {
+        assert.deepEqual(res.parsedJson, {greeting:'hello'});
       })
       .nodeify(done);
   });
@@ -119,7 +125,7 @@ describe('follow-redirects ', function() {
 
       server.start(app)
         .then(asPromise(function(resolve, reject){
-          http.get('http://localhost:3600/a', resolve).on('error', reject);
+          http.request('http://localhost:3600/a', resolve).on('error', reject).end();
         }))
         .catch(function(err) {
           assert.ok(err.toString().match(/Max redirects exceeded/));
@@ -139,11 +145,10 @@ describe('follow-redirects ', function() {
 
       server.start(app)
         .then(asPromise(function(resolve, reject){
-          http.get('http://localhost:3600/a', resolve).on('error', reject);
+          http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
         }))
-        .then(concatJson)
-        .then(function(json) {
-          assert.deepEqual(json, {foo:'bar'})
+        .then(function(res) {
+          assert.deepEqual(res.parsedJson, {foo:'bar'});
         })
         .nodeify(done);
     });
@@ -168,7 +173,7 @@ describe('follow-redirects ', function() {
   });
 
   describe ('should handle cross protocol redirects ', function() {
-    it('(https -> http -> https)', function(done) {
+    skip8('(https -> http -> https)', function(done) {
       app.get('/a', redirectsTo('http://localhost:3600/b'));
       app2.get('/b', redirectsTo('https://localhost:3601/c'));
       app.get('/c', sendsJson({yes:'no'}));
@@ -177,16 +182,15 @@ describe('follow-redirects ', function() {
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('https://localhost:3601/a');
           server.addClientCerts(opts);
-          https.get(opts, resolve).on('error', reject);
+          https.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
-        .then(concatJson)
-        .then(function(json) {
-          assert.deepEqual(json, {yes:'no'});
+        .then(function(res) {
+          assert.deepEqual(res.parsedJson, {yes:'no'});
         })
         .nodeify(done);
     });
 
-    it('(http -> https -> http)', function(done) {
+    skip8('(http -> https -> http)', function(done) {
       app.get('/a', redirectsTo('https://localhost:3601/b'));
       app2.get('/b', redirectsTo('http://localhost:3600/c'));
       app.get('/c', sendsJson({hello:'goodbye'}));
@@ -195,11 +199,10 @@ describe('follow-redirects ', function() {
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('http://localhost:3600/a');
           server.addClientCerts(opts);
-          http.get(opts, resolve).on('error', reject);
+          http.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
-        .then(concatJson)
-        .then(function(json) {
-          assert.deepEqual(json, {hello:'goodbye'});
+        .then(function(res) {
+          assert.deepEqual(res.parsedJson, {hello:'goodbye'});
         })
         .nodeify(done);
     });
@@ -209,25 +212,26 @@ describe('follow-redirects ', function() {
     var args = Array.prototype.slice.call(arguments);
     return function(req, res) {
       res.redirect.apply(res, args);
-    }
+    };
   }
 
   function sendsJson(json) {
     return function(req, res) {
       res.json(json);
-    }
+    };
   }
 
-  function concatJson(res) {
-    return new Promise(function (resolve, reject) {
+  function concatJson(resolve, reject) {
+    return function(res) {
       res.pipe(concat({encoding:'string'}, function(string){
         try {
-          resolve(JSON.parse(string));
+          res.parsedJson = JSON.parse(string);
+          resolve(res);
         } catch (e) {
           reject(new Error('error parsing ' + JSON.stringify(string) + '\n caused by: ' + e.message));
         }
       })).on('error', reject);
-    });
+    };
   }
 
   function asPromise(cb) {
@@ -235,6 +239,14 @@ describe('follow-redirects ', function() {
       return new Promise(function(resolve, reject) {
         cb(resolve, reject, result);
       });
+    };
+  }
+
+  function skip8(description, fn) {
+    var method = it;
+    if (semver.lt(process.version, '0.9.0')) {
+      method = xit;
     }
+    method(description, fn);
   }
 });
