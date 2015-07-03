@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 var url = require('url');
 var debug = require('debug')('follow-redirects');
 var assert = require('assert');
@@ -25,9 +25,9 @@ module.exports = function(_nativeProtocols) {
     var clientRequest;
     var fetchedUrls = [];
 
-    return (clientRequest = internalCallBack());
+    return (clientRequest = cb());
 
-    function internalCallBack(res){
+    function cb(res) {
       // skip the redirection logic on the first call.
       if (res) {
         var fetchedUrl = url.format(options);
@@ -40,7 +40,7 @@ module.exports = function(_nativeProtocols) {
 
         // we are going to follow the redirect, but in node 0.10 we must first attach a data listener
         // to consume the stream and send the 'end' event
-        res.on('data', function(){});
+        res.on('data', function() {});
 
         // need to use url.resolve() in case location is a relative URL
         var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
@@ -55,18 +55,18 @@ module.exports = function(_nativeProtocols) {
       }
 
       if (fetchedUrls.length > options.maxRedirects) {
-        var err = new Error('Max redirects exceeded. Set options.maxRedirects to allow more.');
+        var err = new Error('Max redirects exceeded.');
         return forwardError(err);
       }
 
-      var currentRequest = nativeProtocols[options.protocol].request(options, internalCallBack);
+      var req = nativeProtocols[options.protocol].request(options, cb);
 
       if (res) {
-        currentRequest.end();
-        currentRequest.on('error', forwardError);
+        req.end();
+        req.on('error', forwardError);
       }
 
-      return currentRequest;
+      return req;
     }
 
     // bubble errors that occur on the redirect back up to the initiating client request
@@ -83,7 +83,7 @@ module.exports = function(_nativeProtocols) {
     H = new H();
     publicApi[scheme] = H;
 
-    H.request = function (options, callback) {
+    H.request = function(options, callback) {
       return execute(parseOptions(options, callback, wrappedProtocol));
     };
 
@@ -132,7 +132,8 @@ function extend(destination, source) {
 // a statusCode between 300-399
 // and a `Location` header
 function isRedirect (res) {
-  return res.statusCode >= 300 && res.statusCode <= 399 && 'location' in res.headers;
+  return (res.statusCode >= 300 && res.statusCode <= 399 &&
+  'location' in res.headers);
 }
 
 // nulls all url related properties on the object.
@@ -142,4 +143,5 @@ function wipeUrlProps(options) {
     options[urlProps[i]] = null;
   }
 }
-var urlProps = ['protocol', 'slashes', 'auth', 'host', 'port', 'hostname', 'hash', 'search', 'query', 'pathname', 'path', 'href'];
+var urlProps = ['protocol', 'slashes', 'auth', 'host', 'port', 'hostname',
+  'hash', 'search', 'query', 'pathname', 'path', 'href'];

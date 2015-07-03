@@ -4,8 +4,9 @@
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint && npm run cover",
+    "test": "npm run cover && npm run lint && npm run style",
     "lint": "jshint *.js test/*.js test/**/*.js",
+    "style": "jscs *.js && jscs test/*.js test/**/*.js --config=test/.jscsrc",
     "cover": "BLUEBIRD_DEBUG=1 istanbul cover ./node_modules/.bin/_mocha",
     "debug": "BLUEBIRD_DEBUG=1 mocha"
   },
