@@ -4,7 +4,8 @@
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
   "scripts": {
-    "test": "BLUEBIRD_DEBUG=1 istanbul cover ./node_modules/.bin/_mocha"
+    "test": "BLUEBIRD_DEBUG=1 istanbul cover ./node_modules/.bin/_mocha",
+    "debug": "BLUEBIRD_DEBUG=1 mocha"
   },
   "repository": {
     "type": "git",
@@ -32,15 +33,14 @@
     "James Talmage <james@talmage.io>"
   ],
   "files": [
-    "index.js"
+    "index.js",
+    "create.js"
   ],
   "dependencies": {
-    "debug": "^2.2.0",
-    "underscore": ""
+    "debug": "^2.2.0"
   },
   "devDependencies": {
     "bluebird": "^2.9.30",
-    "colors": "",
     "concat-stream": "^1.5.0",
     "coveralls": "^2.11.2",
     "express": "^4.13.0",

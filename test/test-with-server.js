@@ -119,7 +119,7 @@ describe('follow-redirects ', function() {
 
       server.start(app)
         .then(asPromise(function(resolve, reject){
-          http.get('http://localhost:3600/a', resolve).on('error', reject);
+          http.request('http://localhost:3600/a', resolve).on('error', reject).end();
         }))
         .catch(function(err) {
           assert.ok(err.toString().match(/Max redirects exceeded/));
