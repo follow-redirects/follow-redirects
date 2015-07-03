@@ -45,7 +45,8 @@
     "coveralls": "^2.11.2",
     "express": "^4.13.0",
     "istanbul": "^0.3.17",
-    "mocha": "^2.2.5"
+    "mocha": "^2.2.5",
+    "semver": "~4.3.6"
   },
   "license": "MIT"
 }

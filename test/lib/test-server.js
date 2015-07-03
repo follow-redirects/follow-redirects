@@ -4,6 +4,7 @@ var Promise = require('bluebird');
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
+var semver = require('semver');
 
 var servers = {};
 
@@ -50,6 +51,10 @@ function addClientCerts(opts) {
   // TODO: Add custom CA to whitelist and set `rejectUnauthrized` back to true
   // the following does not work
   //opts.ca = fs.readFileSync(__dirname + '/testing-CA.crt');
+
+  if (semver.lt(process.version, '0.9.0')) {
+    opts.agent = new https.Agent(opts);
+  }
   //opts.cert = fs.readFileSync(__dirname + '/testing-client.crt');
   //opts.key = fs.readFileSync(__dirname + '/testing-client.pem');
 }
