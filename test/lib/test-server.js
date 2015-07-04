@@ -4,7 +4,7 @@ var Promise = require('bluebird');
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
-var semver = require('semver');
+var node8 = require('semver').lt(process.version, '0.9.0');
 
 var servers = {};
 
@@ -48,21 +48,23 @@ function _stop(proto) {
   });
 }
 
-function addClientCerts(opts) {
-  if (semver.lt(process.version, '0.9.0')) {
-    // Can't figure out on certs on node < 0.9. Just giving up
-    opts.rejectUnauthorized = false;
-    opts.agent = new https.Agent(opts);
+function makeRequest(options, cb, res) {
+  if (options.protocol === 'https:') {
+    options.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
+    if (node8) {
+      options.agent = new options.nativeProtocol.Agent(options);
+    } else {
+      options.agent = false;
+    }
   } else {
-    opts.agent = false;
-    opts.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
-    opts.cert = fs.readFileSync(__dirname + '/TestClient.crt');
-    opts.key = fs.readFileSync(__dirname + '/TestClient.pem');
+    delete options.ca;
+    delete options.agent;
   }
+  return options.makeRequest(options, cb, res);
 }
 
 module.exports = {
   start: start,
   stop: stop,
-  addClientCerts: addClientCerts
+  makeRequest: makeRequest
 };

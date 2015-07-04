@@ -24,6 +24,8 @@ module.exports = function(_nativeProtocols) {
   function execute(options) {
     var clientRequest;
     var fetchedUrls = [];
+    var makeRequest = options.makeRequest || defaultMakeRequest;
+    options.makeRequest = defaultMakeRequest;
 
     return (clientRequest = cb());
 
@@ -49,9 +51,6 @@ module.exports = function(_nativeProtocols) {
         // clean all the properties related to the old url away, and copy from the redirect url
         wipeUrlProps(options);
         extend(options, url.parse(redirectUrl));
-
-        // Only use GETs on redirects
-        options.method = 'GET';
       }
 
       if (fetchedUrls.length > options.maxRedirects) {
@@ -59,11 +58,27 @@ module.exports = function(_nativeProtocols) {
         return forwardError(err);
       }
 
-      var req = nativeProtocols[options.protocol].request(options, cb);
+      options.nativeProtocol = nativeProtocols[options.protocol];
+
+      var req = makeRequest(options, cb, res);
 
       if (res) {
-        req.end();
         req.on('error', forwardError);
+      }
+      return req;
+    }
+
+    function defaultMakeRequest(options, cb, res) {
+      if (res) {
+        // This is a redirect, so use only GET methods
+        options.method = 'GET';
+      }
+
+      var req = options.nativeProtocol.request(options, cb);
+
+      if (res) {
+        // We leave the user to call `end` on the first request
+        req.end();
       }
 
       return req;
@@ -137,7 +152,7 @@ function isRedirect (res) {
 }
 
 // nulls all url related properties on the object.
-// on node <10
+// required on node <10
 function wipeUrlProps(options) {
   for (var i = 0, l = urlProps.length; i < l; ++i) {
     options[urlProps[i]] = null;

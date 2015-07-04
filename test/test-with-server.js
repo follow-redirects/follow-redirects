@@ -8,7 +8,6 @@ describe('follow-redirects ', function() {
   var http = followRedirects.http;
   var https = followRedirects.https;
   var Promise = require('bluebird');
-  var semver = require('semver');
 
   var app, app2, originalMaxRedirects;
 
@@ -88,7 +87,7 @@ describe('follow-redirects ', function() {
     server.start(app, 'https')
       .then(asPromise(function(resolve, reject){
         var opts = url.parse('https://localhost:3601/a');
-        server.addClientCerts(opts);
+        opts.makeRequest = server.makeRequest;
         https.get(opts, concatJson(resolve, reject)).on('error', reject);
       }))
       .then(function(res) {
@@ -173,7 +172,7 @@ describe('follow-redirects ', function() {
   });
 
   describe ('should handle cross protocol redirects ', function() {
-    skip8('(https -> http -> https)', function(done) {
+    it('(https -> http -> https)', function(done) {
       app.get('/a', redirectsTo('http://localhost:3600/b'));
       app2.get('/b', redirectsTo('https://localhost:3601/c'));
       app.get('/c', sendsJson({yes:'no'}));
@@ -181,7 +180,7 @@ describe('follow-redirects ', function() {
       Promise.all([server.start(app,'https'), server.start(app2)])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('https://localhost:3601/a');
-          server.addClientCerts(opts);
+          opts.makeRequest = server.makeRequest;
           https.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
         .then(function(res) {
@@ -190,7 +189,7 @@ describe('follow-redirects ', function() {
         .nodeify(done);
     });
 
-    skip8('(http -> https -> http)', function(done) {
+    it('(http -> https -> http)', function(done) {
       app.get('/a', redirectsTo('https://localhost:3601/b'));
       app2.get('/b', redirectsTo('http://localhost:3600/c'));
       app.get('/c', sendsJson({hello:'goodbye'}));
@@ -198,7 +197,7 @@ describe('follow-redirects ', function() {
       Promise.all([server.start(app), server.start(app2, 'https')])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('http://localhost:3600/a');
-          server.addClientCerts(opts);
+          opts.makeRequest = server.makeRequest;
           http.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
         .then(function(res) {
@@ -240,13 +239,5 @@ describe('follow-redirects ', function() {
         cb(resolve, reject, result);
       });
     };
-  }
-
-  function skip8(description, fn) {
-    var method = it;
-    if (semver.lt(process.version, '0.9.0')) {
-      method = xit;
-    }
-    method(description, fn);
   }
 });
