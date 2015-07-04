@@ -4,7 +4,6 @@ var node8 = require('semver').lt(process.version, '0.9.0');
 
 function addServerOptions(options) {
   options = options || {};
-
   //options.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
   options.cert = fs.readFileSync(__dirname + '/TestServer.crt');
   options.key = fs.readFileSync(__dirname + '/TestServer.pem') ;
@@ -13,7 +12,6 @@ function addServerOptions(options) {
 
 function addClientOptions(options) {
   options = options || {};
-
   options.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
   //options.cert = fs.readFileSync(__dirname + '/TestClient.crt');
   //options.key = fs.readFileSync(__dirname + '/TestClient.pem') ;
@@ -32,7 +30,6 @@ function deleteOptions(options) {
   delete options.cert;
   delete options.key;
 }
-
 
 function makeRequest(options, cb, res) {
   if (options.protocol === 'https:') {

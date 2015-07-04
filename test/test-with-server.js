@@ -2,7 +2,10 @@ describe('follow-redirects ', function() {
   var express = require('express');
   var concat = require('concat-stream');
   var assert = require('assert');
-  var server = require('./lib/test-server');
+  var server = require('./lib/test-server')({
+    https: 3601,
+    http: 3600
+  });
   var url = require('url');
   var followRedirects = require('..');
   var http = followRedirects.http;
@@ -14,7 +17,14 @@ describe('follow-redirects ', function() {
   var redirectsTo = util.redirectsTo;
   var sendsJson = util.sendsJson;
   var asPromise = util.asPromise;
-  var makeRequest = require('./lib/https-config').makeRequest;
+  var config = require('./lib/https-config');
+  var makeRequest = config.makeRequest;
+  function httpsOptions(app) {
+    return config.addServerOptions({
+      app: app,
+      protocol: 'https'
+    });
+  }
 
   var app, app2, originalMaxRedirects;
 
@@ -91,7 +101,7 @@ describe('follow-redirects ', function() {
     app.get('/b', redirectsTo('/c'));
     app.get('/c', sendsJson({baz:'quz'}));
 
-    server.start(app, 'https')
+    server.start(httpsOptions(app))
       .then(asPromise(function(resolve, reject){
         var opts = url.parse('https://localhost:3601/a');
         opts.makeRequest = makeRequest;
@@ -184,7 +194,7 @@ describe('follow-redirects ', function() {
       app2.get('/b', redirectsTo('https://localhost:3601/c'));
       app.get('/c', sendsJson({yes:'no'}));
 
-      Promise.all([server.start(app,'https'), server.start(app2)])
+      Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('https://localhost:3601/a');
           opts.makeRequest = makeRequest;
@@ -201,7 +211,7 @@ describe('follow-redirects ', function() {
       app2.get('/b', redirectsTo('http://localhost:3600/c'));
       app.get('/c', sendsJson({hello:'goodbye'}));
 
-      Promise.all([server.start(app), server.start(app2, 'https')])
+      Promise.all([server.start(app), server.start(httpsOptions(app2))])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('http://localhost:3600/a');
           opts.makeRequest = makeRequest;

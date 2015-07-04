@@ -3,45 +3,52 @@
 var Promise = require('bluebird');
 var http = require('http');
 var https = require('https');
-var config = require('./https-config');
+var assert = require('assert');
 
-var servers = {};
+module.exports = function(defaultPorts) {
+  defaultPorts = defaultPorts || {};
+  var cache = [];
 
-var serverPorts = {
-  http: 3600,
-  https: 3601
-};
-
-function start(app, proto, httpsOptions) {
-  proto = proto || 'http';
-  if (proto !== 'http' && proto !== 'https') {
-    throw new Error('proto must be null, http, or https. got: ' + proto);
+  function start(options) {
+    return Promise.fromNode(function(callback) {
+      if (typeof options === 'function') {
+        options = {
+          app: options
+        };
+      }
+      assert(typeof options.app, 'function', 'app');
+      var server, port;
+      var protocol = options.protocol;
+      if (!protocol || protocol.match(/^http(:)?$/)) {
+        server = http.createServer(options.app);
+        port = options.port || defaultPorts.http;
+      } else if (protocol.match(/^https(:)?$/)) {
+        server = https.createServer(options, options.app);
+        port = options.port || defaultPorts.https;
+      }
+      assert(typeof port, 'number', 'port');
+      addServer(server);
+      server.listen(port, callback);
+    });
   }
-  return Promise.fromNode(function(callback) {
-    if (proto === 'http') {
-      servers[proto] = http.createServer(app);
-    }  else {
-      servers[proto] = https.createServer(config.addServerOptions({}), app);
-    }
-    servers[proto].listen(serverPorts[proto], callback);
-  });
-}
 
-function stop() {
-  return Promise.all([_stop('http'), _stop('https')]);
-}
-
-function _stop(proto) {
-  if (!servers[proto]) {
-    return Promise.resolve(proto + ' not running');
+  function stop() {
+    return Promise.all(cache.map(function(_stop){return _stop();})).finally(function(){
+      cache = [];
+    });
   }
-  return Promise.fromNode(function(callback) {
-    servers[proto].close(callback);
-    servers[proto] = null;
-  });
-}
 
-module.exports = {
-  start: start,
-  stop: stop
+  function addServer(server) {
+    cache.push(function () {
+      return Promise.fromNode(function(callback) {
+        server.close(callback);
+      });
+    });
+    return server;
+  }
+
+  return {
+    start: start,
+    stop: stop
+  };
 };
