@@ -24,8 +24,6 @@ module.exports = function(_nativeProtocols) {
   function execute(options) {
     var clientRequest;
     var fetchedUrls = [];
-    var makeRequest = options.makeRequest || defaultMakeRequest;
-    options.makeRequest = defaultMakeRequest;
 
     return (clientRequest = cb());
 
@@ -59,8 +57,9 @@ module.exports = function(_nativeProtocols) {
       }
 
       options.nativeProtocol = nativeProtocols[options.protocol];
+      options.defaultRequest = defaultMakeRequest;
 
-      var req = makeRequest(options, cb, res);
+      var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
 
       if (res) {
         req.on('error', forwardError);

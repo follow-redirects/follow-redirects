@@ -60,7 +60,7 @@ function makeRequest(options, cb, res) {
     delete options.ca;
     delete options.agent;
   }
-  return options.makeRequest(options, cb, res);
+  return options.defaultRequest(options, cb, res);
 }
 
 module.exports = {
