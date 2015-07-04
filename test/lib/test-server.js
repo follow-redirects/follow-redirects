@@ -3,23 +3,16 @@
 var Promise = require('bluebird');
 var http = require('http');
 var https = require('https');
-var fs = require('fs');
-var node8 = require('semver').lt(process.version, '0.9.0');
+var config = require('./https-config');
 
 var servers = {};
-
-var httpsOptions = {
-  //ca : [fs.readFileSync(__dirname + '/TestCA.crt')],
-  cert: fs.readFileSync(__dirname + '/TestServer.crt'),
-  key: fs.readFileSync(__dirname + '/TestServer.pem')
-};
 
 var serverPorts = {
   http: 3600,
   https: 3601
 };
 
-function start(app, proto) {
+function start(app, proto, httpsOptions) {
   proto = proto || 'http';
   if (proto !== 'http' && proto !== 'https') {
     throw new Error('proto must be null, http, or https. got: ' + proto);
@@ -28,7 +21,7 @@ function start(app, proto) {
     if (proto === 'http') {
       servers[proto] = http.createServer(app);
     }  else {
-      servers[proto] = https.createServer(httpsOptions, app);
+      servers[proto] = https.createServer(config.addServerOptions({}), app);
     }
     servers[proto].listen(serverPorts[proto], callback);
   });
@@ -48,23 +41,7 @@ function _stop(proto) {
   });
 }
 
-function makeRequest(options, cb, res) {
-  if (options.protocol === 'https:') {
-    options.ca = [fs.readFileSync(__dirname + '/TestCA.crt')];
-    if (node8) {
-      options.agent = new options.nativeProtocol.Agent(options);
-    } else {
-      options.agent = false;
-    }
-  } else {
-    delete options.ca;
-    delete options.agent;
-  }
-  return options.defaultRequest(options, cb, res);
-}
-
 module.exports = {
   start: start,
-  stop: stop,
-  makeRequest: makeRequest
+  stop: stop
 };

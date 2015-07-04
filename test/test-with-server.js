@@ -14,6 +14,7 @@ describe('follow-redirects ', function() {
   var redirectsTo = util.redirectsTo;
   var sendsJson = util.sendsJson;
   var asPromise = util.asPromise;
+  var makeRequest = require('./lib/https-config').makeRequest;
 
   var app, app2, originalMaxRedirects;
 
@@ -93,7 +94,7 @@ describe('follow-redirects ', function() {
     server.start(app, 'https')
       .then(asPromise(function(resolve, reject){
         var opts = url.parse('https://localhost:3601/a');
-        opts.makeRequest = server.makeRequest;
+        opts.makeRequest = makeRequest;
         https.get(opts, concatJson(resolve, reject)).on('error', reject);
       }))
       .then(function(res) {
@@ -186,7 +187,7 @@ describe('follow-redirects ', function() {
       Promise.all([server.start(app,'https'), server.start(app2)])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('https://localhost:3601/a');
-          opts.makeRequest = server.makeRequest;
+          opts.makeRequest = makeRequest;
           https.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
         .then(function(res) {
@@ -203,7 +204,7 @@ describe('follow-redirects ', function() {
       Promise.all([server.start(app), server.start(app2, 'https')])
         .then(asPromise(function(resolve, reject){
           var opts = url.parse('http://localhost:3600/a');
-          opts.makeRequest = server.makeRequest;
+          opts.makeRequest = makeRequest;
           http.get(opts, concatJson(resolve, reject)).on('error', reject);
         }))
         .then(function(res) {
