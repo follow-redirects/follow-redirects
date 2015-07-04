@@ -9,6 +9,12 @@ describe('follow-redirects ', function() {
   var https = followRedirects.https;
   var Promise = require('bluebird');
 
+  var util = require('./lib/util');
+  var concatJson = util.concatJson;
+  var redirectsTo = util.redirectsTo;
+  var sendsJson = util.sendsJson;
+  var asPromise = util.asPromise;
+
   var app, app2, originalMaxRedirects;
 
   beforeEach(function(){
@@ -206,38 +212,4 @@ describe('follow-redirects ', function() {
         .nodeify(done);
     });
   });
-
-  function redirectsTo(opt_status, path) {
-    var args = Array.prototype.slice.call(arguments);
-    return function(req, res) {
-      res.redirect.apply(res, args);
-    };
-  }
-
-  function sendsJson(json) {
-    return function(req, res) {
-      res.json(json);
-    };
-  }
-
-  function concatJson(resolve, reject) {
-    return function(res) {
-      res.pipe(concat({encoding:'string'}, function(string){
-        try {
-          res.parsedJson = JSON.parse(string);
-          resolve(res);
-        } catch (e) {
-          reject(new Error('error parsing ' + JSON.stringify(string) + '\n caused by: ' + e.message));
-        }
-      })).on('error', reject);
-    };
-  }
-
-  function asPromise(cb) {
-    return function(result) {
-      return new Promise(function(resolve, reject) {
-        cb(resolve, reject, result);
-      });
-    };
-  }
 });
