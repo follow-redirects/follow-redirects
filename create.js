@@ -2,6 +2,7 @@
 var url = require('url');
 var debug = require('debug')('follow-redirects');
 var assert = require('assert');
+var consume = require('stream-consume');
 
 module.exports = function(_nativeProtocols) {
   var nativeProtocols = {};
@@ -40,7 +41,7 @@ module.exports = function(_nativeProtocols) {
 
         // we are going to follow the redirect, but in node 0.10 we must first attach a data listener
         // to consume the stream and send the 'end' event
-        res.on('data', function() {});
+        consume(res);
 
         // need to use url.resolve() in case location is a relative URL
         var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
