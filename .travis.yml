@@ -1,14 +1,12 @@
 language: node_js
+sudo: false
 
 node_js:
+  - '6'
+  - '5'
+  - '4'
   - '0.12'
   - '0.10'
-  - '0.8'
-  - 'iojs'
-
-before_install:
-- '[ "${TRAVIS_NODE_VERSION}" != "0.8" ] || npm install -g npm@1.4.28'
-- npm install -g npm@2.12
 
 after_script:
   - cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
