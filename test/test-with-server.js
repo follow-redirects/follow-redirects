@@ -251,4 +251,29 @@ describe('follow-redirects ', function() {
         .nodeify(done);
     });
   });
+
+  describe ('should honor 307 redirects', function () {
+    it('reuses previous request method', function (done) {
+      app.post('/a', redirectsTo(307, 'http://localhost:3600/b'));
+      app.post('/b', function(req, res) {
+        res.status(200).end();
+      });
+
+      var options = {
+        path: '/a',
+        method: 'POST',
+        port: 3600
+      };
+
+      server.start(app)
+        .then(asPromise(function(resolve, reject){
+          http.request(options, resolve).on('error', reject).end();
+        }))
+        .then(function (res) {
+          assert.equal(res.statusCode, 200);
+          res.on('data', function() {});
+        })
+        .nodeify(done);
+    });
+  });
 });
