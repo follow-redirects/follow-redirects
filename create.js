@@ -69,8 +69,9 @@ module.exports = function(_nativeProtocols) {
     }
 
     function defaultMakeRequest(options, cb, res) {
-      if (res) {
-        // This is a redirect, so use only GET methods
+      if (res && res.statusCode !== 307) {
+        // This is a redirect, so use only GET methods, except for status 307,
+        // which must honor the previous request method.
         options.method = 'GET';
       }
 
