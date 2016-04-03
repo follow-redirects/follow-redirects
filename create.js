@@ -22,7 +22,7 @@ module.exports = function(_nativeProtocols) {
 
   return publicApi;
 
-  function execute(options) {
+  function execute(options, callback) {
     var fetchedUrls = [];
     var clientRequest = cb();
 
@@ -30,8 +30,8 @@ module.exports = function(_nativeProtocols) {
     var requestProxy = Object.create(clientRequest);
     requestProxy._events = {};
     requestProxy._eventsCount = 0;
-    if (options.userCallback) {
-      requestProxy.on('response', options.userCallback);
+    if (callback) {
+      requestProxy.on('response', callback);
     }
     return requestProxy;
 
@@ -104,13 +104,12 @@ module.exports = function(_nativeProtocols) {
     publicApi[scheme] = H;
 
     H.request = function(options, callback) {
-      return execute(parseOptions(options, callback, wrappedProtocol));
+      return execute(parseOptions(options, wrappedProtocol), callback);
     };
 
     // see https://github.com/joyent/node/blob/master/lib/http.js#L1623
     H.get = function(options, callback) {
-      options = parseOptions(options, callback, wrappedProtocol);
-      var req = execute(options);
+      var req = execute(parseOptions(options, wrappedProtocol), callback);
       req.end();
       return req;
     };
@@ -118,7 +117,7 @@ module.exports = function(_nativeProtocols) {
 
   // returns a safe copy of options (or a parsed url object if options was a string).
   // validates that the supplied callback is a function
-  function parseOptions (options, callback, wrappedProtocol) {
+  function parseOptions (options, wrappedProtocol) {
     if ('string' === typeof options) {
       options = url.parse(options);
       options.maxRedirects = publicApi.maxRedirects;
@@ -129,8 +128,6 @@ module.exports = function(_nativeProtocols) {
       }, options);
     }
     assert.equal(options.protocol, wrappedProtocol, 'protocol mismatch');
-    options.protocol = wrappedProtocol;
-    options.userCallback = callback;
 
     debug('options', options);
     return options;
