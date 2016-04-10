@@ -22,11 +22,18 @@ module.exports = function(_nativeProtocols) {
 
   return publicApi;
 
-  function execute(options) {
-    var clientRequest;
+  function execute(options, callback) {
     var fetchedUrls = [];
+    var clientRequest = cb();
 
-    return (clientRequest = cb());
+    // return a proxy to the request with separate event handling
+    var requestProxy = Object.create(clientRequest);
+    requestProxy._events = {};
+    requestProxy._eventsCount = 0;
+    if (callback) {
+      requestProxy.on('response', callback);
+    }
+    return requestProxy;
 
     function cb(res) {
       // skip the redirection logic on the first call.
@@ -36,7 +43,8 @@ module.exports = function(_nativeProtocols) {
 
         if (!isRedirect(res)) {
           res.fetchedUrls = fetchedUrls;
-          return options.userCallback(res);
+          requestProxy.emit('response', res);
+          return;
         }
 
         // we are going to follow the redirect, but in node 0.10 we must first attach a data listener
@@ -61,10 +69,7 @@ module.exports = function(_nativeProtocols) {
       options.defaultRequest = defaultMakeRequest;
 
       var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
-
-      if (res) {
-        req.on('error', forwardError);
-      }
+      req.on('error', forwardError);
       return req;
     }
 
@@ -87,7 +92,7 @@ module.exports = function(_nativeProtocols) {
     // bubble errors that occur on the redirect back up to the initiating client request
     // object, otherwise they wind up killing the process.
     function forwardError (err) {
-      clientRequest.emit('error', err);
+      requestProxy.emit('error', err);
     }
   }
 
@@ -99,13 +104,12 @@ module.exports = function(_nativeProtocols) {
     publicApi[scheme] = H;
 
     H.request = function(options, callback) {
-      return execute(parseOptions(options, callback, wrappedProtocol));
+      return execute(parseOptions(options, wrappedProtocol), callback);
     };
 
     // see https://github.com/joyent/node/blob/master/lib/http.js#L1623
     H.get = function(options, callback) {
-      options = parseOptions(options, callback, wrappedProtocol);
-      var req = execute(options);
+      var req = execute(parseOptions(options, wrappedProtocol), callback);
       req.end();
       return req;
     };
@@ -113,8 +117,7 @@ module.exports = function(_nativeProtocols) {
 
   // returns a safe copy of options (or a parsed url object if options was a string).
   // validates that the supplied callback is a function
-  function parseOptions (options, callback, wrappedProtocol) {
-    assert.equal(typeof callback, 'function', 'callback must be a function');
+  function parseOptions (options, wrappedProtocol) {
     if ('string' === typeof options) {
       options = url.parse(options);
       options.maxRedirects = publicApi.maxRedirects;
@@ -125,8 +128,6 @@ module.exports = function(_nativeProtocols) {
       }, options);
     }
     assert.equal(options.protocol, wrappedProtocol, 'protocol mismatch');
-    options.protocol = wrappedProtocol;
-    options.userCallback = callback;
 
     debug('options', options);
     return options;
