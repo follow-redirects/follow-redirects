@@ -1,6 +1,6 @@
 {
   "name": "follow-redirects",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
   "scripts": {
