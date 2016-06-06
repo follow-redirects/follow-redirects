@@ -4,9 +4,7 @@
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
   "scripts": {
-    "test": "xo && npm run cover",
-    "cover": "BLUEBIRD_DEBUG=1 istanbul cover ./node_modules/.bin/_mocha",
-    "debug": "BLUEBIRD_DEBUG=1 mocha"
+    "test": "xo && BLUEBIRD_DEBUG=1 nyc mocha"
   },
   "repository": {
     "type": "git",
@@ -48,12 +46,18 @@
     "concat-stream": "^1.5.0",
     "coveralls": "^2.11.2",
     "express": "^4.13.0",
-    "istanbul": "^0.3.17",
     "mocha": "^2.2.5",
+    "nyc": "^6.4.4",
     "semver": "~4.3.6",
     "xo": "^0.15.1"
   },
   "license": "MIT",
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text"
+    ]
+  },
   "xo": {
     "envs": [
       "mocha"
