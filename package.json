@@ -42,13 +42,13 @@
     "stream-consume": "^0.1.0"
   },
   "devDependencies": {
-    "bluebird": "^2.9.30",
+    "bluebird": "^3.4.0",
     "concat-stream": "^1.5.0",
     "coveralls": "^2.11.2",
     "express": "^4.13.0",
     "mocha": "^2.2.5",
     "nyc": "^6.4.4",
-    "semver": "~4.3.6",
+    "semver": "~5.1.0",
     "xo": "^0.15.1"
   },
   "license": "MIT",
