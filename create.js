@@ -3,6 +3,7 @@ var url = require('url');
 var assert = require('assert');
 var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
+var isRedirect = require('is-redirect');
 
 module.exports = function (_nativeProtocols) {
 	var nativeProtocols = {};
@@ -41,7 +42,7 @@ module.exports = function (_nativeProtocols) {
 				var fetchedUrl = url.format(options);
 				fetchedUrls.unshift(fetchedUrl);
 
-				if (!isRedirect(res)) {
+				if (!(isRedirect(res.statusCode) && ('location' in res.headers))) {
 					res.fetchedUrls = fetchedUrls;
 					requestProxy.emit('response', res);
 					return;
@@ -143,14 +144,6 @@ function extend(destination, source) {
 		}
 	}
 	return destination;
-}
-
-// to redirect the result must have
-// a statusCode between 300-399
-// and a `Location` header
-function isRedirect(res) {
-	return (res.statusCode >= 300 && res.statusCode <= 399 &&
-	'location' in res.headers);
 }
 
 var urlProps = ['protocol', 'slashes', 'auth', 'host', 'port', 'hostname',
