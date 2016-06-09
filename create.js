@@ -66,7 +66,6 @@ module.exports = function (nativeProtocols) {
 				debug('redirecting to', redirectUrl);
 
 				// clean all the properties related to the old url away, and copy from the redirect url
-				wipeUrlProps(options);
 				extend(options, url.parse(redirectUrl));
 			}
 
@@ -134,15 +133,4 @@ function extend(destination, source) {
 		}
 	}
 	return destination;
-}
-
-var urlProps = ['protocol', 'slashes', 'auth', 'host', 'port', 'hostname',
-	'hash', 'search', 'query', 'pathname', 'path', 'href'];
-
-// nulls all url related properties on the object.
-// required on node <10
-function wipeUrlProps(options) {
-	for (var i = 0, l = urlProps.length; i < l; ++i) {
-		options[urlProps[i]] = null;
-	}
 }
