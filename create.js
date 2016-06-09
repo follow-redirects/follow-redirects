@@ -12,12 +12,8 @@ module.exports = function (nativeProtocols) {
 	};
 
 	var wrappedProtocols = mapObj(nativeProtocols, function (scheme, nativeProtocol) {
-		// http://www.ietf.org/rfc/rfc2396.txt - Section 3.1
-		assert(/^[A-Z][A-Z\+\-\.]*$/i.test(scheme), JSON.stringify(scheme) + ' is not a valid scheme name');
 		var protocol = scheme + ':';
-		var Constructor = function () {};
-		Constructor.prototype = nativeProtocol;
-		var wrapped = new Constructor();
+		var wrapped = Object.create(nativeProtocol);
 		publicApi[scheme] = wrapped;
 
 		wrapped.request = function (options, callback) {
