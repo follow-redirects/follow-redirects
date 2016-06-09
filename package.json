@@ -40,6 +40,7 @@
   "dependencies": {
     "debug": "^2.2.0",
     "is-redirect": "^1.0.0",
+    "map-obj": "^1.0.1",
     "stream-consume": "^0.1.0"
   },
   "devDependencies": {

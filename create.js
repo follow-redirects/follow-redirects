@@ -4,22 +4,35 @@ var assert = require('assert');
 var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
 var isRedirect = require('is-redirect');
+var mapObj = require('map-obj');
 
-module.exports = function (_nativeProtocols) {
-	var nativeProtocols = {};
-
+module.exports = function (nativeProtocols) {
 	var publicApi = {
 		maxRedirects: 5
 	};
 
-	for (var p in _nativeProtocols) {
-		/* istanbul ignore else */
-		if (_nativeProtocols.hasOwnProperty(p)) {
-			// http://www.ietf.org/rfc/rfc2396.txt - Section 3.1
-			assert(/^[A-Z][A-Z\+\-\.]*$/i.test(p), JSON.stringify(p) + ' is not a valid scheme name');
-			generateWrapper(p, _nativeProtocols[p]);
-		}
-	}
+	var wrappedProtocols = mapObj(nativeProtocols, function (scheme, nativeProtocol) {
+		// http://www.ietf.org/rfc/rfc2396.txt - Section 3.1
+		assert(/^[A-Z][A-Z\+\-\.]*$/i.test(scheme), JSON.stringify(scheme) + ' is not a valid scheme name');
+		var protocol = scheme + ':';
+		var Constructor = function () {};
+		Constructor.prototype = nativeProtocol;
+		var wrapped = new Constructor();
+		publicApi[scheme] = wrapped;
+
+		wrapped.request = function (options, callback) {
+			return execute(parseOptions(options, protocol), callback);
+		};
+
+		// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
+		wrapped.get = function (options, callback) {
+			var req = execute(parseOptions(options, protocol), callback);
+			req.end();
+			return req;
+		};
+
+		return [protocol, nativeProtocol];
+	});
 
 	return publicApi;
 
@@ -66,7 +79,7 @@ module.exports = function (_nativeProtocols) {
 				return forwardError(err);
 			}
 
-			options.nativeProtocol = nativeProtocols[options.protocol];
+			options.nativeProtocol = wrappedProtocols[options.protocol];
 			options.defaultRequest = defaultMakeRequest;
 
 			var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
@@ -96,25 +109,6 @@ module.exports = function (_nativeProtocols) {
 		function forwardError(err) {
 			requestProxy.emit('error', err);
 		}
-	}
-
-	function generateWrapper(scheme, nativeProtocol) {
-		var wrappedProtocol = scheme + ':';
-		var H = function () {};
-		H.prototype = nativeProtocols[wrappedProtocol] = nativeProtocol;
-		H = new H();
-		publicApi[scheme] = H;
-
-		H.request = function (options, callback) {
-			return execute(parseOptions(options, wrappedProtocol), callback);
-		};
-
-		// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-		H.get = function (options, callback) {
-			var req = execute(parseOptions(options, wrappedProtocol), callback);
-			req.end();
-			return req;
-		};
 	}
 
 	// returns a safe copy of options (or a parsed url object if options was a string).
