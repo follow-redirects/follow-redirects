@@ -108,17 +108,17 @@ module.exports = function (nativeProtocols) {
 
 	// returns a safe copy of options (or a parsed url object if options was a string).
 	// validates that the supplied callback is a function
-	function parseOptions(options, wrappedProtocol) {
+	function parseOptions(options, protocol) {
 		if (typeof options === 'string') {
 			options = url.parse(options);
 			options.maxRedirects = publicApi.maxRedirects;
 		} else {
 			options = extend({
 				maxRedirects: publicApi.maxRedirects,
-				protocol: wrappedProtocol
+				protocol: protocol
 			}, options);
 		}
-		assert.equal(options.protocol, wrappedProtocol, 'protocol mismatch');
+		assert.equal(options.protocol, protocol, 'protocol mismatch');
 
 		debug('options', options);
 		return options;
