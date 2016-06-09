@@ -1,6 +1,5 @@
 'use strict';
 var url = require('url');
-var assert = require('assert');
 var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
 var isRedirect = require('is-redirect');
@@ -26,10 +25,15 @@ module.exports = function (nativeProtocols) {
 	return publicApi;
 
 	function execute(autoEnd, protocol, options, callback) {
-		options = parseOptions(options, protocol);
+		if (typeof options === 'string') {
+			options = url.parse(options);
+		}
+
+		options = objectAssign({protocol: protocol}, options);
+		var maxRedirects = options.maxRedirects || publicApi.maxRedirects;
+
 		var fetchedUrls = [];
 		var clientRequest = cb();
-
 		// return a proxy to the request with separate event handling
 		var requestProxy = Object.create(clientRequest);
 		requestProxy._events = {};
@@ -69,7 +73,7 @@ module.exports = function (nativeProtocols) {
 				objectAssign(options, url.parse(redirectUrl));
 			}
 
-			if (fetchedUrls.length > options.maxRedirects) {
+			if (fetchedUrls.length > maxRedirects) {
 				var err = new Error('Max redirects exceeded.');
 				return forwardError(err);
 			}
@@ -104,23 +108,5 @@ module.exports = function (nativeProtocols) {
 		function forwardError(err) {
 			requestProxy.emit('error', err);
 		}
-	}
-
-	// returns a safe copy of options (or a parsed url object if options was a string).
-	// validates that the supplied callback is a function
-	function parseOptions(options, protocol) {
-		if (typeof options === 'string') {
-			options = url.parse(options);
-			options.maxRedirects = publicApi.maxRedirects;
-		} else {
-			options = objectAssign({
-				maxRedirects: publicApi.maxRedirects,
-				protocol: protocol
-			}, options);
-		}
-		assert.equal(options.protocol, protocol, 'protocol mismatch');
-
-		debug('options', options);
-		return options;
 	}
 };
