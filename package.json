@@ -41,6 +41,7 @@
     "debug": "^2.2.0",
     "is-redirect": "^1.0.0",
     "map-obj": "^1.0.1",
+    "object-assign": "^4.1.0",
     "stream-consume": "^0.1.0"
   },
   "devDependencies": {

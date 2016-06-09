@@ -5,6 +5,7 @@ var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
 var isRedirect = require('is-redirect');
 var mapObj = require('map-obj');
+var objectAssign = require('object-assign');
 
 module.exports = function (nativeProtocols) {
 	var publicApi = {
@@ -66,7 +67,7 @@ module.exports = function (nativeProtocols) {
 				debug('redirecting to', redirectUrl);
 
 				// clean all the properties related to the old url away, and copy from the redirect url
-				extend(options, url.parse(redirectUrl));
+				objectAssign(options, url.parse(redirectUrl));
 			}
 
 			if (fetchedUrls.length > options.maxRedirects) {
@@ -113,7 +114,7 @@ module.exports = function (nativeProtocols) {
 			options = url.parse(options);
 			options.maxRedirects = publicApi.maxRedirects;
 		} else {
-			options = extend({
+			options = objectAssign({
 				maxRedirects: publicApi.maxRedirects,
 				protocol: protocol
 			}, options);
@@ -124,13 +125,3 @@ module.exports = function (nativeProtocols) {
 		return options;
 	}
 };
-
-// copies source's own properties onto destination and returns destination
-function extend(destination, source) {
-	for (var i in source) {
-		if (source.hasOwnProperty(i)) {
-			destination[i] = source[i];
-		}
-	}
-	return destination;
-}
