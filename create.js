@@ -17,23 +17,16 @@ module.exports = function (nativeProtocols) {
 		var wrapped = Object.create(nativeProtocol);
 		publicApi[scheme] = wrapped;
 
-		wrapped.request = function (options, callback) {
-			return execute(parseOptions(options, protocol), callback);
-		};
-
-		// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-		wrapped.get = function (options, callback) {
-			var req = execute(parseOptions(options, protocol), callback);
-			req.end();
-			return req;
-		};
+		wrapped.request = execute.bind(null, false, protocol);
+		wrapped.get = execute.bind(null, true, protocol);
 
 		return [protocol, nativeProtocol];
 	});
 
 	return publicApi;
 
-	function execute(options, callback) {
+	function execute(autoEnd, protocol, options, callback) {
+		options = parseOptions(options, protocol);
 		var fetchedUrls = [];
 		var clientRequest = cb();
 
@@ -41,9 +34,15 @@ module.exports = function (nativeProtocols) {
 		var requestProxy = Object.create(clientRequest);
 		requestProxy._events = {};
 		requestProxy._eventsCount = 0;
+
 		if (callback) {
 			requestProxy.on('response', callback);
 		}
+
+		if (autoEnd) {
+			requestProxy.end();
+		}
+
 		return requestProxy;
 
 		function cb(res) {
