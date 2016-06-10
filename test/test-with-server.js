@@ -18,6 +18,9 @@ describe('follow-redirects ', function () {
 	var asPromise = util.asPromise;
 	var config = require('./lib/https-config');
 	var makeRequest = config.makeRequest;
+
+	var fs = require('fs');
+
 	function httpsOptions(app) {
 		return config.addServerOptions({
 			app: app,
@@ -276,6 +279,35 @@ describe('follow-redirects ', function () {
 				})
 				.nodeify(done);
 		});
+	});
+
+	it('should support piping into request stream', function (done) {
+		app.post('/a', function (req, res) {
+			req.pipe(res);
+		});
+
+		var opts = url.parse('http://localhost:3600/a');
+		opts.method = 'POST';
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var req = http.request(opts, resolve);
+				fs.createReadStream(__filename).pipe(req);
+				req.on('error', reject);
+			}))
+			.then(asPromise(function (resolve, reject, res) {
+				var str = '';
+				res.on('data', function (chunk) {
+					str += chunk.toString('utf8');
+				});
+				res.on('end', function () {
+					resolve(str);
+				});
+			}))
+			.then(function (str) {
+				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
+			})
+			.nodeify(done);
 	});
 });
 
