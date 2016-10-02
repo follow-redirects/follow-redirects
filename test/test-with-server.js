@@ -161,6 +161,32 @@ describe('follow-redirects ', function () {
 			.nodeify(done);
 	});
 
+	it('should allow aborting', function (done) {
+		var request;
+
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', redirectsTo('/c'));
+		app.get('/c', callAbort);
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				request = http.get('http://localhost:3600/a', resolve);
+				request.on('response', reject);
+				request.on('error', reject);
+				request.on('abort', onAbort);
+				function onAbort() {
+					request.removeListener('error', reject);
+					request.on('error', noop);
+					resolve();
+				}
+			}))
+			.nodeify(done);
+
+		function callAbort() {
+			request.abort();
+		}
+	});
+
 	describe('should obey a `maxRedirects` property ', function () {
 		it('which defaults to 5', function (done) {
 			app.get('/a', redirectsTo('/b'));

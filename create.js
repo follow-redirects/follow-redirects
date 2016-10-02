@@ -93,15 +93,18 @@ module.exports = function (_nativeProtocols) {
 
 			if (fetchedUrls.length > options.maxRedirects) {
 				var err = new Error('Max redirects exceeded.');
-				return forwardError(err);
+				requestProxy.emit('error', err);
+				return;
 			}
 
 			options.nativeProtocol = nativeProtocols[options.protocol];
 			options.defaultRequest = defaultMakeRequest;
 
 			var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
-			req.on('error', forwardError);
 			requestProxy._request = req;
+			mirrorEvent(req, 'abort');
+			mirrorEvent(req, 'aborted');
+			mirrorEvent(req, 'error');
 			return req;
 		}
 
@@ -122,10 +125,11 @@ module.exports = function (_nativeProtocols) {
 			return req;
 		}
 
-		// bubble errors that occur on the redirect back up to the initiating client request
-		// object, otherwise they wind up killing the process.
-		function forwardError(err) {
-			requestProxy.emit('error', err);
+		// send events through the proxy
+		function mirrorEvent(req, event) {
+			req.on(event, function (arg) {
+				requestProxy.emit(event, arg);
+			});
 		}
 	}
 
