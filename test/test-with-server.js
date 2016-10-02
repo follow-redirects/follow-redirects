@@ -187,6 +187,58 @@ describe('follow-redirects ', function () {
 		}
 	});
 
+	it('should provide flushHeaders', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.flushHeaders();
+				request.on('response', resolve);
+				request.on('error', reject);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setNoDelay', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setNoDelay(true);
+				request.on('response', resolve);
+				request.on('error', reject);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setSocketKeepAlive', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setSocketKeepAlive(true);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setTimeout', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setTimeout(1000);
+			}))
+			.nodeify(done);
+	});
+
 	describe('should obey a `maxRedirects` property ', function () {
 		it('which defaults to 5', function (done) {
 			app.get('/a', redirectsTo('/b'));
