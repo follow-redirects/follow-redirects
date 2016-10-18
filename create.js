@@ -154,18 +154,8 @@ function isRedirect(res) {
 }
 
 module.exports = function (_nativeProtocols) {
-	for (var p in _nativeProtocols) {
-		/* istanbul ignore else */
-		if (_nativeProtocols.hasOwnProperty(p)) {
-			// http://www.ietf.org/rfc/rfc2396.txt - Section 3.1
-			assert(/^[A-Z][A-Z\+\-\.]*$/i.test(p), JSON.stringify(p) + ' is not a valid scheme name');
-			generateWrapper(p, _nativeProtocols[p]);
-		}
-	}
-
-	return publicApi;
-
-	function generateWrapper(scheme, nativeProtocol) {
+	Object.keys(_nativeProtocols).forEach(function (scheme) {
+		var nativeProtocol = _nativeProtocols[scheme];
 		var wrappedProtocol = scheme + ':';
 		var H = function () {};
 		H.prototype = nativeProtocols[wrappedProtocol] = nativeProtocol;
@@ -182,5 +172,6 @@ module.exports = function (_nativeProtocols) {
 			req.end();
 			return req;
 		};
-	}
+	});
+	return publicApi;
 };
