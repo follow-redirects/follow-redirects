@@ -20,8 +20,8 @@ function concatJson(resolve, reject) {
 			try {
 				res.parsedJson = JSON.parse(string);
 				resolve(res);
-			} catch (e) {
-				reject(new Error('error parsing ' + JSON.stringify(string) + '\n caused by: ' + e.message));
+			} catch (err) {
+				reject(new Error('error parsing ' + JSON.stringify(string) + '\n caused by: ' + err.message));
 			}
 		})).on('error', reject);
 	};

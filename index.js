@@ -135,10 +135,10 @@ function parseOptions(options, wrappedProtocol) {
 
 // copies source's own properties onto destination and returns destination
 function extend(destination, source) {
-	for (var i in source) {
-		if (source.hasOwnProperty(i)) {
-			destination[i] = source[i];
-		}
+	var keys = Object.keys(source);
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		destination[key] = source[key];
 	}
 	return destination;
 }
