@@ -72,9 +72,6 @@ function execute(options, callback) {
 			// need to use url.resolve() in case location is a relative URL
 			var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
 			debug('redirecting to', redirectUrl);
-
-			// clean all the properties related to the old url away, and copy from the redirect url
-			wipeUrlProps(options);
 			extend(options, url.parse(redirectUrl));
 		}
 
@@ -154,17 +151,6 @@ function extend(destination, source) {
 function isRedirect(res) {
 	return (res.statusCode >= 300 && res.statusCode <= 399 &&
 	'location' in res.headers);
-}
-
-var urlProps = ['protocol', 'slashes', 'auth', 'host', 'port', 'hostname',
-	'hash', 'search', 'query', 'pathname', 'path', 'href'];
-
-// nulls all url related properties on the object.
-// required on node <10
-function wipeUrlProps(options) {
-	for (var i = 0, l = urlProps.length; i < l; ++i) {
-		options[urlProps[i]] = null;
-	}
 }
 
 module.exports = function (_nativeProtocols) {
