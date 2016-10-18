@@ -38,8 +38,7 @@
     "https.js"
   ],
   "dependencies": {
-    "debug": "^2.2.0",
-    "stream-consume": "^0.1.0"
+    "debug": "^2.2.0"
   },
   "devDependencies": {
     "bluebird": "^3.4.0",

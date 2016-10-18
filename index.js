@@ -4,7 +4,6 @@ var assert = require('assert');
 var http = require('http');
 var https = require('https');
 var Writable = require('stream').Writable;
-var consume = require('stream-consume');
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
@@ -67,10 +66,6 @@ function execute(options, callback) {
 				requestProxy.emit('response', res);
 				return;
 			}
-
-			// we are going to follow the redirect, but in node 0.10 we must first attach a data listener
-			// to consume the stream and send the 'end' event
-			consume(res);
 
 			// need to use url.resolve() in case location is a relative URL
 			var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
