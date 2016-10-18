@@ -18,6 +18,9 @@ describe('follow-redirects ', function () {
 	var asPromise = util.asPromise;
 	var config = require('./lib/https-config');
 	var makeRequest = config.makeRequest;
+
+	var fs = require('fs');
+
 	function httpsOptions(app) {
 		return config.addServerOptions({
 			app: app,
@@ -158,6 +161,84 @@ describe('follow-redirects ', function () {
 			.nodeify(done);
 	});
 
+	it('should allow aborting', function (done) {
+		var request;
+
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', redirectsTo('/c'));
+		app.get('/c', callAbort);
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				request = http.get('http://localhost:3600/a', resolve);
+				request.on('response', reject);
+				request.on('error', reject);
+				request.on('abort', onAbort);
+				function onAbort() {
+					request.removeListener('error', reject);
+					request.on('error', noop);
+					resolve();
+				}
+			}))
+			.nodeify(done);
+
+		function callAbort() {
+			request.abort();
+		}
+	});
+
+	it('should provide flushHeaders', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.flushHeaders();
+				request.on('response', resolve);
+				request.on('error', reject);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setNoDelay', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setNoDelay(true);
+				request.on('response', resolve);
+				request.on('error', reject);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setSocketKeepAlive', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setSocketKeepAlive(true);
+			}))
+			.nodeify(done);
+	});
+
+	it('should provide setTimeout', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', sendsJson({foo: 'bar'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve) {
+				var request = http.get('http://localhost:3600/a', resolve);
+				request.setTimeout(1000);
+			}))
+			.nodeify(done);
+	});
+
 	describe('should obey a `maxRedirects` property ', function () {
 		it('which defaults to 5', function (done) {
 			app.get('/a', redirectsTo('/b'));
@@ -276,6 +357,35 @@ describe('follow-redirects ', function () {
 				})
 				.nodeify(done);
 		});
+	});
+
+	it('should support piping into request stream', function (done) {
+		app.post('/a', function (req, res) {
+			req.pipe(res);
+		});
+
+		var opts = url.parse('http://localhost:3600/a');
+		opts.method = 'POST';
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var req = http.request(opts, resolve);
+				fs.createReadStream(__filename).pipe(req);
+				req.on('error', reject);
+			}))
+			.then(asPromise(function (resolve, reject, res) {
+				var str = '';
+				res.on('data', function (chunk) {
+					str += chunk.toString('utf8');
+				});
+				res.on('end', function () {
+					resolve(str);
+				});
+			}))
+			.then(function (str) {
+				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
+			})
+			.nodeify(done);
 	});
 });
 

@@ -1,8 +1,43 @@
 'use strict';
 var url = require('url');
 var assert = require('assert');
+var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
+
+// Wrapper around the native request
+function RequestProxy() {
+	Writable.call(this);
+}
+RequestProxy.prototype = Object.create(Writable.prototype);
+
+RequestProxy.prototype.abort = function () {
+	this._request.abort();
+};
+
+RequestProxy.prototype.end = function (data, encoding, callback) {
+	this._request.end(data, encoding, callback);
+};
+
+RequestProxy.prototype.flushHeaders = function () {
+	this._request.flushHeaders();
+};
+
+RequestProxy.prototype.setNoDelay = function (noDelay) {
+	this._request.setNoDelay(noDelay);
+};
+
+RequestProxy.prototype.setSocketKeepAlive = function (enable, initialDelay) {
+	this._request.setSocketKeepAlive(enable, initialDelay);
+};
+
+RequestProxy.prototype.setTimeout = function (timeout, callback) {
+	this._request.setSocketKeepAlive(timeout, callback);
+};
+
+RequestProxy.prototype._write = function (chunk, encoding, callback) {
+	this._request.write(chunk, encoding, callback);
+};
 
 module.exports = function (_nativeProtocols) {
 	var nativeProtocols = {};
@@ -24,15 +59,11 @@ module.exports = function (_nativeProtocols) {
 
 	function execute(options, callback) {
 		var fetchedUrls = [];
-		var clientRequest = cb();
-
-		// return a proxy to the request with separate event handling
-		var requestProxy = Object.create(clientRequest);
-		requestProxy._events = {};
-		requestProxy._eventsCount = 0;
+		var requestProxy = new RequestProxy();
 		if (callback) {
 			requestProxy.on('response', callback);
 		}
+		cb();
 		return requestProxy;
 
 		function cb(res) {
@@ -62,14 +93,18 @@ module.exports = function (_nativeProtocols) {
 
 			if (fetchedUrls.length > options.maxRedirects) {
 				var err = new Error('Max redirects exceeded.');
-				return forwardError(err);
+				requestProxy.emit('error', err);
+				return;
 			}
 
 			options.nativeProtocol = nativeProtocols[options.protocol];
 			options.defaultRequest = defaultMakeRequest;
 
 			var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
-			req.on('error', forwardError);
+			requestProxy._request = req;
+			mirrorEvent(req, 'abort');
+			mirrorEvent(req, 'aborted');
+			mirrorEvent(req, 'error');
 			return req;
 		}
 
@@ -90,10 +125,11 @@ module.exports = function (_nativeProtocols) {
 			return req;
 		}
 
-		// bubble errors that occur on the redirect back up to the initiating client request
-		// object, otherwise they wind up killing the process.
-		function forwardError(err) {
-			requestProxy.emit('error', err);
+		// send events through the proxy
+		function mirrorEvent(req, event) {
+			req.on(event, function (arg) {
+				requestProxy.emit(event, arg);
+			});
 		}
 	}
 
