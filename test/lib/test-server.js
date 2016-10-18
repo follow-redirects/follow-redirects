@@ -3,7 +3,7 @@
 var http = require('http');
 var https = require('https');
 var assert = require('assert');
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 
 module.exports = function (defaultPorts) {
 	// set default ports for each protocol i.e. {http: 80, https: 443}
@@ -24,7 +24,7 @@ module.exports = function (defaultPorts) {
 	 * @returns {Promise} that resolves when the server successfully started
 	 */
 	function start(options) {
-		return Promise.fromNode(function (callback) {
+		return BPromise.fromNode(function (callback) {
 			if (typeof options === 'function') {
 				options = {
 					app: options
@@ -52,11 +52,11 @@ module.exports = function (defaultPorts) {
 	 * @returns {Promise} that resolves when all servers have successfully shut down.
 	 */
 	function stop() {
-		return Promise.all(servers.map(stopServer)).finally(clearServers);
+		return BPromise.all(servers.map(stopServer)).finally(clearServers);
 	}
 
 	function stopServer(server) {
-		return Promise.fromNode(function (callback) {
+		return BPromise.fromNode(function (callback) {
 			server.close(callback);
 		});
 	}

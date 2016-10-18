@@ -9,7 +9,7 @@ describe('follow-redirects ', function () {
 	var followRedirects = require('..');
 	var http = followRedirects.http;
 	var https = followRedirects.https;
-	var Promise = require('bluebird');
+	var BPromise = require('bluebird');
 
 	var util = require('./lib/util');
 	var concatJson = util.concatJson;
@@ -304,7 +304,7 @@ describe('follow-redirects ', function () {
 			app2.get('/b', redirectsTo('https://localhost:3601/c'));
 			app.get('/c', sendsJson({yes: 'no'}));
 
-			Promise.all([server.start(httpsOptions(app)), server.start(app2)])
+			BPromise.all([server.start(httpsOptions(app)), server.start(app2)])
 				.then(asPromise(function (resolve, reject) {
 					var opts = url.parse('https://localhost:3601/a');
 					opts.makeRequest = makeRequest;
@@ -321,7 +321,7 @@ describe('follow-redirects ', function () {
 			app2.get('/b', redirectsTo('http://localhost:3600/c'));
 			app.get('/c', sendsJson({hello: 'goodbye'}));
 
-			Promise.all([server.start(app), server.start(httpsOptions(app2))])
+			BPromise.all([server.start(app), server.start(httpsOptions(app2))])
 				.then(asPromise(function (resolve, reject) {
 					var opts = url.parse('http://localhost:3600/a');
 					opts.makeRequest = makeRequest;

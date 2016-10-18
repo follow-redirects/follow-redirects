@@ -1,5 +1,5 @@
 var concat = require('concat-stream');
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 
 function redirectsTo(/* opt_status, path */) {
 	var args = Array.prototype.slice.call(arguments);
@@ -29,7 +29,7 @@ function concatJson(resolve, reject) {
 
 function asPromise(cb) {
 	return function (result) {
-		return new Promise(function (resolve, reject) {
+		return new BPromise(function (resolve, reject) {
 			cb(resolve, reject, result);
 		});
 	};
