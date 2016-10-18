@@ -1,14 +1,17 @@
 'use strict';
 var url = require('url');
 var assert = require('assert');
+var http = require('http');
+var https = require('https');
 var Writable = require('stream').Writable;
-var debug = require('debug')('follow-redirects');
 var consume = require('stream-consume');
+var debug = require('debug')('follow-redirects');
 
-var publicApi = {
+var nativeProtocols = {'http:': http, 'https:': https};
+
+var publicApi = module.exports = {
 	maxRedirects: 5
 };
-var nativeProtocols = {};
 
 // Wrapper around the native request
 function RequestProxy() {
@@ -153,25 +156,22 @@ function isRedirect(res) {
 	'location' in res.headers);
 }
 
-module.exports = function (_nativeProtocols) {
-	Object.keys(_nativeProtocols).forEach(function (scheme) {
-		var nativeProtocol = _nativeProtocols[scheme];
-		var wrappedProtocol = scheme + ':';
-		var H = function () {};
-		H.prototype = nativeProtocols[wrappedProtocol] = nativeProtocol;
-		H = new H();
-		publicApi[scheme] = H;
+Object.keys(nativeProtocols).forEach(function (wrappedProtocol) {
+	var scheme = wrappedProtocol.substr(0, wrappedProtocol.length - 1);
+	var nativeProtocol = nativeProtocols[wrappedProtocol];
+	var H = function () {};
+	H.prototype = nativeProtocol;
+	H = new H();
+	publicApi[scheme] = H;
 
-		H.request = function (options, callback) {
-			return execute(parseOptions(options, wrappedProtocol), callback);
-		};
+	H.request = function (options, callback) {
+		return execute(parseOptions(options, wrappedProtocol), callback);
+	};
 
-		// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-		H.get = function (options, callback) {
-			var req = execute(parseOptions(options, wrappedProtocol), callback);
-			req.end();
-			return req;
-		};
-	});
-	return publicApi;
-};
+	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
+	H.get = function (options, callback) {
+		var req = execute(parseOptions(options, wrappedProtocol), callback);
+		req.end();
+		return req;
+	};
+});
