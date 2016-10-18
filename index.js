@@ -159,17 +159,14 @@ function isRedirect(res) {
 Object.keys(nativeProtocols).forEach(function (wrappedProtocol) {
 	var scheme = wrappedProtocol.substr(0, wrappedProtocol.length - 1);
 	var nativeProtocol = nativeProtocols[wrappedProtocol];
-	var H = function () {};
-	H.prototype = nativeProtocol;
-	H = new H();
-	publicApi[scheme] = H;
+	var protocol = publicApi[scheme] = Object.create(nativeProtocol);
 
-	H.request = function (options, callback) {
+	protocol.request = function (options, callback) {
 		return execute(parseOptions(options, wrappedProtocol), callback);
 	};
 
 	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-	H.get = function (options, callback) {
+	protocol.get = function (options, callback) {
 		var req = execute(parseOptions(options, wrappedProtocol), callback);
 		req.end();
 		return req;
