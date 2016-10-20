@@ -239,39 +239,39 @@ describe('follow-redirects ', function () {
 			.nodeify(done);
 	});
 
-	describe('should obey a `maxRedirects` property ', function () {
-		it('which defaults to 5', function (done) {
-			app.get('/a', redirectsTo('/b'));
-			app.get('/b', redirectsTo('/c'));
-			app.get('/c', redirectsTo('/d'));
-			app.get('/d', redirectsTo('/e'));
-			app.get('/e', redirectsTo('/f'));
-			app.get('/f', redirectsTo('/g'));
-			app.get('/g', sendsJson({foo: 'bar'}));
+	describe('should obey a `maxRedirects` property', function () {
+		beforeEach(function () {
+			var i = 22;
+			while (i > 0) {
+				app.get('/r' + i, redirectsTo('/r' + --i));
+			}
+			app.get('/r0', sendsJson({foo: 'bar'}));
+		});
 
+		it('which defaults to 21', function (done) {
 			server.start(app)
+				// 21 redirects should work fine
 				.then(asPromise(function (resolve, reject) {
-					http.request('http://localhost:3600/a', resolve).on('error', reject).end();
+					http.get('http://localhost:3600/r21', concatJson(resolve, reject)).on('error', reject);
 				}))
-				.catch(function (err) {
+				.then(function (res) {
+					assert.deepEqual(res.parsedJson, {foo: 'bar'});
+				})
+				// 22 redirects should fail
+				.then(asPromise(function (resolve, reject) {
+					http.get('http://localhost:3600/r22', reject).on('error', resolve);
+				}))
+				.then(function (err) {
 					assert.ok(err.toString().match(/Max redirects exceeded/));
 				})
 				.nodeify(done);
 		});
 
 		it('which can be set globally', function (done) {
-			followRedirects.maxRedirects = 6;
-			app.get('/a', redirectsTo('/b'));
-			app.get('/b', redirectsTo('/c'));
-			app.get('/c', redirectsTo('/d'));
-			app.get('/d', redirectsTo('/e'));
-			app.get('/e', redirectsTo('/f'));
-			app.get('/f', redirectsTo('/g'));
-			app.get('/g', sendsJson({foo: 'bar'}));
-
+			followRedirects.maxRedirects = 22;
 			server.start(app)
 				.then(asPromise(function (resolve, reject) {
-					http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
+					http.get('http://localhost:3600/r22', concatJson(resolve, reject)).on('error', reject);
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {foo: 'bar'});
@@ -280,18 +280,14 @@ describe('follow-redirects ', function () {
 		});
 
 		it('set as an option on an individual request', function (done) {
-			app.get('/a', redirectsTo('/b'));
-			app.get('/b', redirectsTo('/c'));
-			app.get('/c', sendsJson({foo: 'bar'}));
-
-			var u = url.parse('http://localhost:3600/a');
+			var u = url.parse('http://localhost:3600/r2');
 			u.maxRedirects = 1;
 
 			server.start(app)
 				.then(asPromise(function (resolve, reject) {
-					http.get(u, resolve).on('error', reject);
+					http.get(u, reject).on('error', resolve);
 				}))
-				.catch(function (err) {
+				.then(function (err) {
 					assert.ok(err.toString().match(/Max redirects exceeded/));
 				})
 				.nodeify(done);

@@ -9,7 +9,7 @@ var debug = require('debug')('follow-redirects');
 var nativeProtocols = {'http:': http, 'https:': https};
 
 var publicApi = module.exports = {
-	maxRedirects: 5
+	maxRedirects: 21
 };
 
 // Wrapper around the native request
