@@ -7,14 +7,16 @@ var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
-
-var publicApi = module.exports = {
+var exports = module.exports = {
 	maxRedirects: 21
 };
 
 // Wrapper around the native request
-function RequestProxy() {
+function RequestProxy(callback) {
 	Writable.call(this);
+	if (callback) {
+		this.on('response', callback);
+	}
 }
 RequestProxy.prototype = Object.create(Writable.prototype);
 
@@ -48,27 +50,24 @@ RequestProxy.prototype._write = function (chunk, encoding, callback) {
 
 function execute(options, callback) {
 	var fetchedUrls = [];
-	var requestProxy = new RequestProxy();
-	if (callback) {
-		requestProxy.on('response', callback);
-	}
-	cb();
+	var requestProxy = new RequestProxy(callback);
+	nextRequest(null);
 	return requestProxy;
 
-	function cb(res) {
+	function nextRequest(previousResponse) {
 		// skip the redirection logic on the first call.
-		if (res) {
+		if (previousResponse) {
 			var fetchedUrl = url.format(options);
 			fetchedUrls.unshift(fetchedUrl);
 
-			if (!isRedirect(res)) {
-				res.fetchedUrls = fetchedUrls;
-				requestProxy.emit('response', res);
+			if (!isRedirect(previousResponse)) {
+				previousResponse.fetchedUrls = fetchedUrls;
+				requestProxy.emit('response', previousResponse);
 				return;
 			}
 
 			// need to use url.resolve() in case location is a relative URL
-			var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
+			var redirectUrl = url.resolve(fetchedUrl, previousResponse.headers.location);
 			debug('redirecting to', redirectUrl);
 			extend(options, url.parse(redirectUrl));
 		}
@@ -82,34 +81,35 @@ function execute(options, callback) {
 		options.nativeProtocol = nativeProtocols[options.protocol];
 		options.defaultRequest = defaultMakeRequest;
 
-		var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
-		requestProxy._request = req;
-		mirrorEvent(req, 'abort');
-		mirrorEvent(req, 'aborted');
-		mirrorEvent(req, 'error');
-		return req;
+		var makeRequest = options.makeRequest || defaultMakeRequest;
+		var request = makeRequest(options, previousResponse, nextRequest);
+		requestProxy._request = request;
+		mirrorEvent(request, 'abort');
+		mirrorEvent(request, 'aborted');
+		mirrorEvent(request, 'error');
+		return request;
 	}
 
-	function defaultMakeRequest(options, cb, res) {
-		if (res && res.statusCode !== 307) {
+	function defaultMakeRequest(options, response, callback) {
+		if (response && response.statusCode !== 307) {
 			// This is a redirect, so use only GET methods, except for status 307,
 			// which must honor the previous request method.
 			options.method = 'GET';
 		}
 
-		var req = options.nativeProtocol.request(options, cb);
+		var request = options.nativeProtocol.request(options, callback);
 
-		if (res) {
+		if (response) {
 			// We leave the user to call `end` on the first request
-			req.end();
+			request.end();
 		}
 
-		return req;
+		return request;
 	}
 
 	// send events through the proxy
-	function mirrorEvent(req, event) {
-		req.on(event, function (arg) {
+	function mirrorEvent(request, event) {
+		request.on(event, function (arg) {
 			requestProxy.emit(event, arg);
 		});
 	}
@@ -120,10 +120,10 @@ function execute(options, callback) {
 function parseOptions(options, wrappedProtocol) {
 	if (typeof options === 'string') {
 		options = url.parse(options);
-		options.maxRedirects = publicApi.maxRedirects;
+		options.maxRedirects = exports.maxRedirects;
 	} else {
 		options = extend({
-			maxRedirects: publicApi.maxRedirects,
+			maxRedirects: exports.maxRedirects,
 			protocol: wrappedProtocol
 		}, options);
 	}
@@ -146,15 +146,15 @@ function extend(destination, source) {
 // to redirect the result must have
 // a statusCode between 300-399
 // and a `Location` header
-function isRedirect(res) {
-	return (res.statusCode >= 300 && res.statusCode <= 399 &&
-	'location' in res.headers);
+function isRedirect(response) {
+	return (response.statusCode >= 300 && response.statusCode <= 399 &&
+	'location' in response.headers);
 }
 
 Object.keys(nativeProtocols).forEach(function (wrappedProtocol) {
 	var scheme = wrappedProtocol.substr(0, wrappedProtocol.length - 1);
 	var nativeProtocol = nativeProtocols[wrappedProtocol];
-	var protocol = publicApi[scheme] = Object.create(nativeProtocol);
+	var protocol = exports[scheme] = Object.create(nativeProtocol);
 
 	protocol.request = function (options, callback) {
 		return execute(parseOptions(options, wrappedProtocol), callback);
@@ -162,8 +162,8 @@ Object.keys(nativeProtocols).forEach(function (wrappedProtocol) {
 
 	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
 	protocol.get = function (options, callback) {
-		var req = execute(parseOptions(options, wrappedProtocol), callback);
-		req.end();
-		return req;
+		var request = execute(parseOptions(options, wrappedProtocol), callback);
+		request.end();
+		return request;
 	};
 });

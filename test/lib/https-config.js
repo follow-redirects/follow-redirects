@@ -31,13 +31,13 @@ function deleteOptions(options) {
 	delete options.key;
 }
 
-function makeRequest(options, cb, res) {
+function makeRequest(options, res, callback) {
 	if (options.protocol === 'https:') {
 		addClientOptions(options);
 	} else {
 		deleteOptions(options);
 	}
-	return options.defaultRequest(options, cb, res);
+	return options.defaultRequest(options, res, callback);
 }
 
 module.exports = {
