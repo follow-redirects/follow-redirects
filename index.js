@@ -71,7 +71,8 @@ RedirectableRequest.prototype._performRequest = function () {
 
 RedirectableRequest.prototype._processResponse = function (response) {
 	// Emit the response if it is not a redirect
-	if (!isRedirect(response)) {
+	if (response.statusCode < 300 || response.statusCode > 399 ||
+			!response.headers.location) {
 		response.redirectUrl = this._currentUrl;
 		return this.emit('response', response);
 	}
@@ -126,14 +127,6 @@ function extend(destination, source) {
 		destination[key] = source[key];
 	}
 	return destination;
-}
-
-// to redirect the result must have
-// a statusCode between 300-399
-// and a `Location` header
-function isRedirect(response) {
-	return (response.statusCode >= 300 && response.statusCode <= 399 &&
-	'location' in response.headers);
 }
 
 // Export a wrapper for each native protocol
