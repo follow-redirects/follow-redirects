@@ -78,11 +78,7 @@ function execute(options, callback) {
 			return;
 		}
 
-		options.nativeProtocol = nativeProtocols[options.protocol];
-		options.defaultRequest = defaultMakeRequest;
-
-		var makeRequest = options.makeRequest || defaultMakeRequest;
-		var request = makeRequest(options, previousResponse, nextRequest);
+		var request = performRequest(options, previousResponse, nextRequest);
 		requestProxy._request = request;
 		mirrorEvent(request, 'abort');
 		mirrorEvent(request, 'aborted');
@@ -90,16 +86,16 @@ function execute(options, callback) {
 		return request;
 	}
 
-	function defaultMakeRequest(options, response, callback) {
-		if (response && response.statusCode !== 307) {
+	function performRequest(options, previousResponse, callback) {
+		if (previousResponse && previousResponse.statusCode !== 307) {
 			// This is a redirect, so use only GET methods, except for status 307,
 			// which must honor the previous request method.
 			options.method = 'GET';
 		}
 
-		var request = options.nativeProtocol.request(options, callback);
+		var request = nativeProtocols[options.protocol].request(options, callback);
 
-		if (response) {
+		if (previousResponse) {
 			// We leave the user to call `end` on the first request
 			request.end();
 		}

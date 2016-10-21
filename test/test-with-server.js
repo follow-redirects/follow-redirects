@@ -16,17 +16,19 @@ describe('follow-redirects ', function () {
 	var redirectsTo = util.redirectsTo;
 	var sendsJson = util.sendsJson;
 	var asPromise = util.asPromise;
-	var config = require('./lib/https-config');
-	var makeRequest = config.makeRequest;
 
 	var fs = require('fs');
+	var path = require('path');
 
 	function httpsOptions(app) {
-		return config.addServerOptions({
+		return {
 			app: app,
-			protocol: 'https'
-		});
+			protocol: 'https',
+			cert: fs.readFileSync(path.join(__dirname, 'lib/TestServer.crt')),
+			key: fs.readFileSync(path.join(__dirname, 'lib/TestServer.pem'))
+		};
 	}
+	var ca = fs.readFileSync(path.join(__dirname, 'lib/TestCA.crt'));
 
 	var app;
 	var app2;
@@ -136,7 +138,7 @@ describe('follow-redirects ', function () {
 		server.start(httpsOptions(app))
 			.then(asPromise(function (resolve, reject) {
 				var opts = url.parse('https://localhost:3601/a');
-				opts.makeRequest = makeRequest;
+				opts.ca = ca;
 				https.get(opts, concatJson(resolve, reject)).on('error', reject);
 			}))
 			.then(function (res) {
@@ -303,7 +305,7 @@ describe('follow-redirects ', function () {
 			BPromise.all([server.start(httpsOptions(app)), server.start(app2)])
 				.then(asPromise(function (resolve, reject) {
 					var opts = url.parse('https://localhost:3601/a');
-					opts.makeRequest = makeRequest;
+					opts.ca = ca;
 					https.get(opts, concatJson(resolve, reject)).on('error', reject);
 				}))
 				.then(function (res) {
@@ -320,7 +322,7 @@ describe('follow-redirects ', function () {
 			BPromise.all([server.start(app), server.start(httpsOptions(app2))])
 				.then(asPromise(function (resolve, reject) {
 					var opts = url.parse('http://localhost:3600/a');
-					opts.makeRequest = makeRequest;
+					opts.ca = ca;
 					http.get(opts, concatJson(resolve, reject)).on('error', reject);
 				}))
 				.then(function (res) {
