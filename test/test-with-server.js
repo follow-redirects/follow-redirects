@@ -59,14 +59,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {a: 'b'});
-				assert.deepEqual(res.fetchedUrls, [
-					'http://localhost:3600/f',
-					'http://localhost:3600/e',
-					'http://localhost:3600/d',
-					'http://localhost:3600/c',
-					'http://localhost:3600/b',
-					'http://localhost:3600/a'
-				]);
+				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/f');
 			})
 			.nodeify(done);
 	});
@@ -87,14 +80,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {a: 'b'});
-				assert.deepEqual(res.fetchedUrls, [
-					'http://localhost:3600/f',
-					'http://localhost:3600/e',
-					'http://localhost:3600/d',
-					'http://localhost:3600/c',
-					'http://localhost:3600/b',
-					'http://localhost:3600/a'
-				]);
+				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/f');
 			})
 			.nodeify(done);
 	});
@@ -108,9 +94,10 @@ describe('follow-redirects ', function () {
 			.then(asPromise(function (resolve, reject) {
 				http.get('http://localhost:3600/a', resolve).on('error', reject);
 			}))
-			.then(function (response) {
-				assert.equal(response.statusCode, 307);
-				response.on('data', function () {
+			.then(function (res) {
+				assert.equal(res.statusCode, 307);
+				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/a');
+				res.on('data', function () {
 					// noop to consume the stream (server won't shut down otherwise).
 				});
 			})
@@ -143,6 +130,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {baz: 'quz'});
+				assert.deepEqual(res.redirectUrl, 'https://localhost:3601/c');
 			})
 			.nodeify(done);
 	});
@@ -159,6 +147,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {greeting: 'hello'});
+				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/b?greeting=hello');
 			})
 			.nodeify(done);
 	});
@@ -258,6 +247,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {foo: 'bar'});
+					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/r0');
 				})
 				// 22 redirects should fail
 				.then(asPromise(function (resolve, reject) {
@@ -277,6 +267,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {foo: 'bar'});
+					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/r0');
 				})
 				.nodeify(done);
 		});
@@ -310,6 +301,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {yes: 'no'});
+					assert.deepEqual(res.redirectUrl, 'https://localhost:3601/c');
 				})
 				.nodeify(done);
 		});
@@ -327,6 +319,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {hello: 'goodbye'});
+					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/c');
 				})
 				.nodeify(done);
 		});

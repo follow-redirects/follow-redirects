@@ -68,33 +68,33 @@ RequestProxy.prototype._write = function (chunk, encoding, callback) {
 };
 
 function execute(options, callback) {
-	var fetchedUrls = [];
 	var requestProxy = new RequestProxy(callback);
+	var previousUrl;
+	var redirectCount = 0;
 	nextRequest(null);
 	return requestProxy;
 
 	function nextRequest(previousResponse) {
 		// skip the redirection logic on the first call.
 		if (previousResponse) {
-			var fetchedUrl = url.format(options);
-			fetchedUrls.unshift(fetchedUrl);
+			redirectCount++;
+			previousUrl = url.format(options);
 
 			if (!isRedirect(previousResponse)) {
-				previousResponse.fetchedUrls = fetchedUrls;
+				previousResponse.redirectUrl = previousUrl;
 				requestProxy.emit('response', previousResponse);
 				return;
 			}
 
 			// need to use url.resolve() in case location is a relative URL
-			var redirectUrl = url.resolve(fetchedUrl, previousResponse.headers.location);
+			var redirectUrl = url.resolve(previousUrl, previousResponse.headers.location);
 			debug('redirecting to', redirectUrl);
 			extend(options, url.parse(redirectUrl));
-		}
 
-		if (fetchedUrls.length > options.maxRedirects) {
-			var err = new Error('Max redirects exceeded.');
-			requestProxy.emit('error', err);
-			return;
+			if (redirectCount > options.maxRedirects) {
+				requestProxy.emit('error', new Error('Max redirects exceeded.'));
+				return;
+			}
 		}
 		requestProxy._performRequest(options, previousResponse, nextRequest);
 	}
