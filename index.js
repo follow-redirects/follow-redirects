@@ -86,7 +86,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	var location = response.headers.location;
 	var redirectUrl = url.resolve(this._currentUrl, location);
 	debug('redirecting to', redirectUrl);
-	extend(this._options, url.parse(redirectUrl));
+	Object.assign(this._options, url.parse(redirectUrl));
 	this._currentResponse = response;
 	this._performRequest();
 };
@@ -119,16 +119,6 @@ RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
 	this._currentRequest.write(chunk, encoding, callback);
 };
 
-// copies source's own properties onto destination and returns destination
-function extend(destination, source) {
-	var keys = Object.keys(source);
-	for (var i = 0; i < keys.length; i++) {
-		var key = keys[i];
-		destination[key] = source[key];
-	}
-	return destination;
-}
-
 // Export a wrapper for each native protocol
 Object.keys(nativeProtocols).forEach(function (protocol) {
 	var scheme = protocol.substr(0, protocol.length - 1);
@@ -140,7 +130,7 @@ Object.keys(nativeProtocols).forEach(function (protocol) {
 			options = url.parse(options);
 			options.maxRedirects = exports.maxRedirects;
 		} else {
-			options = extend({
+			options = Object.assign({
 				maxRedirects: exports.maxRedirects,
 				protocol: protocol
 			}, options);
