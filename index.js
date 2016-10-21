@@ -7,6 +7,7 @@ var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
+var mirroredEvents = ['abort', 'aborted', 'error'];
 var exports = module.exports = {
 	maxRedirects: 21
 };
@@ -29,6 +30,14 @@ function RedirectableRequest(options, responseCallback) {
 		self._processResponse(response);
 	};
 
+	// Create handlers to mirror events from native requests
+	var eventMirrors = this._eventMirrors = Object.create(null);
+	mirroredEvents.forEach(function (event) {
+		eventMirrors[event] = function (arg) {
+			self.emit(event, arg);
+		};
+	});
+
 	// Perform the first request
 	this._performRequest();
 }
@@ -41,14 +50,18 @@ RedirectableRequest.prototype._performRequest = function () {
 		this._options.method = 'GET';
 	}
 
-	// Perform the request through the native protocol
+	// Create the native request through the native protocol
 	var protocol = nativeProtocols[this._options.protocol];
 	var request = this._currentRequest =
 								protocol.request(this._options, this._onNativeResponse);
 	this._currentUrl = url.format(this._options);
-	mirrorEvent(request, this, 'abort');
-	mirrorEvent(request, this, 'aborted');
-	mirrorEvent(request, this, 'error');
+
+	// Mirror events from the native request
+	for (var event in this._eventMirrors) {
+		if (event) {
+			request.on(event, this._eventMirrors[event]);
+		}
+	}
 
 	// The first request is explicitly ended in RedirectableRequest#end
 	if (this._currentResponse) {
@@ -104,13 +117,6 @@ RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
 	this._currentRequest.write(chunk, encoding, callback);
 };
-
-// send events through the proxy
-function mirrorEvent(source, destination, event) {
-	source.on(event, function (arg) {
-		destination.emit(event, arg);
-	});
-}
 
 // copies source's own properties onto destination and returns destination
 function extend(destination, source) {
