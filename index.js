@@ -7,163 +7,154 @@ var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
-
-var publicApi = module.exports = {
+var mirroredEvents = ['abort', 'aborted', 'error'];
+var exports = module.exports = {
 	maxRedirects: 21
 };
 
-// Wrapper around the native request
-function RequestProxy() {
+// An HTTP(S) request that can be redirected
+function RedirectableRequest(options, responseCallback) {
+	// Initialize the request
 	Writable.call(this);
-}
-RequestProxy.prototype = Object.create(Writable.prototype);
+	this._options = options;
+	this._redirectCount = 0;
 
-RequestProxy.prototype.abort = function () {
-	this._request.abort();
-};
-
-RequestProxy.prototype.end = function (data, encoding, callback) {
-	this._request.end(data, encoding, callback);
-};
-
-RequestProxy.prototype.flushHeaders = function () {
-	this._request.flushHeaders();
-};
-
-RequestProxy.prototype.setNoDelay = function (noDelay) {
-	this._request.setNoDelay(noDelay);
-};
-
-RequestProxy.prototype.setSocketKeepAlive = function (enable, initialDelay) {
-	this._request.setSocketKeepAlive(enable, initialDelay);
-};
-
-RequestProxy.prototype.setTimeout = function (timeout, callback) {
-	this._request.setSocketKeepAlive(timeout, callback);
-};
-
-RequestProxy.prototype._write = function (chunk, encoding, callback) {
-	this._request.write(chunk, encoding, callback);
-};
-
-function execute(options, callback) {
-	var fetchedUrls = [];
-	var requestProxy = new RequestProxy();
-	if (callback) {
-		requestProxy.on('response', callback);
-	}
-	cb();
-	return requestProxy;
-
-	function cb(res) {
-		// skip the redirection logic on the first call.
-		if (res) {
-			var fetchedUrl = url.format(options);
-			fetchedUrls.unshift(fetchedUrl);
-
-			if (!isRedirect(res)) {
-				res.fetchedUrls = fetchedUrls;
-				requestProxy.emit('response', res);
-				return;
-			}
-
-			// need to use url.resolve() in case location is a relative URL
-			var redirectUrl = url.resolve(fetchedUrl, res.headers.location);
-			debug('redirecting to', redirectUrl);
-			extend(options, url.parse(redirectUrl));
-		}
-
-		if (fetchedUrls.length > options.maxRedirects) {
-			var err = new Error('Max redirects exceeded.');
-			requestProxy.emit('error', err);
-			return;
-		}
-
-		options.nativeProtocol = nativeProtocols[options.protocol];
-		options.defaultRequest = defaultMakeRequest;
-
-		var req = (options.makeRequest || defaultMakeRequest)(options, cb, res);
-		requestProxy._request = req;
-		mirrorEvent(req, 'abort');
-		mirrorEvent(req, 'aborted');
-		mirrorEvent(req, 'error');
-		return req;
+	// Attach a callback if passed
+	if (responseCallback) {
+		this.on('response', responseCallback);
 	}
 
-	function defaultMakeRequest(options, cb, res) {
-		if (res && res.statusCode !== 307) {
-			// This is a redirect, so use only GET methods, except for status 307,
-			// which must honor the previous request method.
-			options.method = 'GET';
-		}
-
-		var req = options.nativeProtocol.request(options, cb);
-
-		if (res) {
-			// We leave the user to call `end` on the first request
-			req.end();
-		}
-
-		return req;
-	}
-
-	// send events through the proxy
-	function mirrorEvent(req, event) {
-		req.on(event, function (arg) {
-			requestProxy.emit(event, arg);
-		});
-	}
-}
-
-// returns a safe copy of options (or a parsed url object if options was a string).
-// validates that the supplied callback is a function
-function parseOptions(options, wrappedProtocol) {
-	if (typeof options === 'string') {
-		options = url.parse(options);
-		options.maxRedirects = publicApi.maxRedirects;
-	} else {
-		options = extend({
-			maxRedirects: publicApi.maxRedirects,
-			protocol: wrappedProtocol
-		}, options);
-	}
-	assert.equal(options.protocol, wrappedProtocol, 'protocol mismatch');
-
-	debug('options', options);
-	return options;
-}
-
-// copies source's own properties onto destination and returns destination
-function extend(destination, source) {
-	var keys = Object.keys(source);
-	for (var i = 0; i < keys.length; i++) {
-		var key = keys[i];
-		destination[key] = source[key];
-	}
-	return destination;
-}
-
-// to redirect the result must have
-// a statusCode between 300-399
-// and a `Location` header
-function isRedirect(res) {
-	return (res.statusCode >= 300 && res.statusCode <= 399 &&
-	'location' in res.headers);
-}
-
-Object.keys(nativeProtocols).forEach(function (wrappedProtocol) {
-	var scheme = wrappedProtocol.substr(0, wrappedProtocol.length - 1);
-	var nativeProtocol = nativeProtocols[wrappedProtocol];
-	var protocol = publicApi[scheme] = Object.create(nativeProtocol);
-
-	protocol.request = function (options, callback) {
-		return execute(parseOptions(options, wrappedProtocol), callback);
+	// React to responses of native requests
+	var self = this;
+	this._onNativeResponse = function (response) {
+		self._processResponse(response);
 	};
 
-	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
-	protocol.get = function (options, callback) {
-		var req = execute(parseOptions(options, wrappedProtocol), callback);
-		req.end();
-		return req;
+	// Create handlers to mirror events from native requests
+	var eventMirrors = this._eventMirrors = Object.create(null);
+	mirroredEvents.forEach(function (event) {
+		eventMirrors[event] = function (arg) {
+			self.emit(event, arg);
+		};
+	});
+
+	// Perform the first request
+	this._performRequest();
+}
+RedirectableRequest.prototype = Object.create(Writable.prototype);
+
+// Executes the next native request (initial or redirect)
+RedirectableRequest.prototype._performRequest = function () {
+	if (this._currentResponse && this._currentResponse.statusCode !== 307) {
+		// This is a redirect, so use only GET methods, except for status 307,
+		// which must honor the previous request method.
+		this._options.method = 'GET';
+	}
+
+	// Create the native request through the native protocol
+	var protocol = nativeProtocols[this._options.protocol];
+	var request = this._currentRequest =
+								protocol.request(this._options, this._onNativeResponse);
+	this._currentUrl = url.format(this._options);
+
+	// Mirror events from the native request
+	for (var event in this._eventMirrors) {
+		if (event) {
+			request.on(event, this._eventMirrors[event]);
+		}
+	}
+
+	// The first request is explicitly ended in RedirectableRequest#end
+	if (this._currentResponse) {
+		request.end();
+	}
+};
+
+// Processes a response from the current native request
+RedirectableRequest.prototype._processResponse = function (response) {
+	// Emit the response if it is not a redirect
+	if (response.statusCode < 300 || response.statusCode > 399 ||
+			!response.headers.location) {
+		response.redirectUrl = this._currentUrl;
+		return this.emit('response', response);
+	}
+
+	// Only allow a limited number of redirects
+	if (++this._redirectCount > this._options.maxRedirects) {
+		return this.emit('error', new Error('Max redirects exceeded.'));
+	}
+
+	// Create and execute a redirect request
+	var location = response.headers.location;
+	var redirectUrl = url.resolve(this._currentUrl, location);
+	debug('redirecting to', redirectUrl);
+	Object.assign(this._options, url.parse(redirectUrl));
+	this._currentResponse = response;
+	this._performRequest();
+};
+
+// Aborts the current native request
+RedirectableRequest.prototype.abort = function () {
+	this._currentRequest.abort();
+};
+
+// Ends the current native request
+RedirectableRequest.prototype.end = function (data, encoding, callback) {
+	this._currentRequest.end(data, encoding, callback);
+};
+
+// Flushes the headers of the current native request
+RedirectableRequest.prototype.flushHeaders = function () {
+	this._currentRequest.flushHeaders();
+};
+
+// Sets the noDelay option of the current native request
+RedirectableRequest.prototype.setNoDelay = function (noDelay) {
+	this._currentRequest.setNoDelay(noDelay);
+};
+
+// Sets the socketKeepAlive option of the current native request
+RedirectableRequest.prototype.setSocketKeepAlive = function (enable, initialDelay) {
+	this._currentRequest.setSocketKeepAlive(enable, initialDelay);
+};
+
+// Sets the timeout option of the current native request
+RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
+	this._currentRequest.setSocketKeepAlive(timeout, callback);
+};
+
+// Writes buffered data to the current native request
+RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
+	this._currentRequest.write(chunk, encoding, callback);
+};
+
+// Export a redirecting wrapper for each native protocol
+Object.keys(nativeProtocols).forEach(function (protocol) {
+	var scheme = protocol.substr(0, protocol.length - 1);
+	var nativeProtocol = nativeProtocols[protocol];
+	var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
+
+	// Executes an HTTP request, following redirects
+	wrappedProtocol.request = function (options, callback) {
+		if (typeof options === 'string') {
+			options = url.parse(options);
+			options.maxRedirects = exports.maxRedirects;
+		} else {
+			options = Object.assign({
+				maxRedirects: exports.maxRedirects,
+				protocol: protocol
+			}, options);
+		}
+		assert.equal(options.protocol, protocol, 'protocol mismatch');
+		debug('options', options);
+
+		return new RedirectableRequest(options, callback);
+	};
+
+	// Executes a GET request, following redirects
+	wrappedProtocol.get = function (options, callback) {
+		var request = wrappedProtocol.request(options, callback);
+		request.end();
+		return request;
 	};
 });
