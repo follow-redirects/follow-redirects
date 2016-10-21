@@ -11,8 +11,8 @@ var exports = module.exports = {
 	maxRedirects: 21
 };
 
-// Wrapper around the native request
-function RequestProxy(options, responseCallback) {
+// An HTTP(S) request that can be redirected
+function RedirectableRequest(options, responseCallback) {
 	// Initialize the request
 	Writable.call(this);
 	this._options = options;
@@ -32,10 +32,10 @@ function RequestProxy(options, responseCallback) {
 	// Perform the first request
 	this._performRequest();
 }
-RequestProxy.prototype = Object.create(Writable.prototype);
+RedirectableRequest.prototype = Object.create(Writable.prototype);
 
-RequestProxy.prototype._performRequest = function () {
-	if (this._previousResponse && this._previousResponse.statusCode !== 307) {
+RedirectableRequest.prototype._performRequest = function () {
+	if (this._currentResponse && this._currentResponse.statusCode !== 307) {
 		// This is a redirect, so use only GET methods, except for status 307,
 		// which must honor the previous request method.
 		this._options.method = 'GET';
@@ -50,13 +50,13 @@ RequestProxy.prototype._performRequest = function () {
 	mirrorEvent(request, this, 'aborted');
 	mirrorEvent(request, this, 'error');
 
-	// The first request is explicitly ended in RequestProxy#end
-	if (this._previousResponse) {
+	// The first request is explicitly ended in RedirectableRequest#end
+	if (this._currentResponse) {
 		request.end();
 	}
 };
 
-RequestProxy.prototype._processResponse = function (response) {
+RedirectableRequest.prototype._processResponse = function (response) {
 	// Emit the response if it is not a redirect
 	if (!isRedirect(response)) {
 		response.redirectUrl = this._currentUrl;
@@ -73,35 +73,35 @@ RequestProxy.prototype._processResponse = function (response) {
 	var redirectUrl = url.resolve(this._currentUrl, location);
 	debug('redirecting to', redirectUrl);
 	extend(this._options, url.parse(redirectUrl));
-	this._previousResponse = response;
+	this._currentResponse = response;
 	this._performRequest();
 };
 
-RequestProxy.prototype.abort = function () {
+RedirectableRequest.prototype.abort = function () {
 	this._currentRequest.abort();
 };
 
-RequestProxy.prototype.end = function (data, encoding, callback) {
+RedirectableRequest.prototype.end = function (data, encoding, callback) {
 	this._currentRequest.end(data, encoding, callback);
 };
 
-RequestProxy.prototype.flushHeaders = function () {
+RedirectableRequest.prototype.flushHeaders = function () {
 	this._currentRequest.flushHeaders();
 };
 
-RequestProxy.prototype.setNoDelay = function (noDelay) {
+RedirectableRequest.prototype.setNoDelay = function (noDelay) {
 	this._currentRequest.setNoDelay(noDelay);
 };
 
-RequestProxy.prototype.setSocketKeepAlive = function (enable, initialDelay) {
+RedirectableRequest.prototype.setSocketKeepAlive = function (enable, initialDelay) {
 	this._currentRequest.setSocketKeepAlive(enable, initialDelay);
 };
 
-RequestProxy.prototype.setTimeout = function (timeout, callback) {
+RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 	this._currentRequest.setSocketKeepAlive(timeout, callback);
 };
 
-RequestProxy.prototype._write = function (chunk, encoding, callback) {
+RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
 	this._currentRequest.write(chunk, encoding, callback);
 };
 
@@ -154,7 +154,7 @@ Object.keys(nativeProtocols).forEach(function (protocol) {
 	var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
 
 	wrappedProtocol.request = function (options, callback) {
-		return new RequestProxy(parseOptions(options, protocol), callback);
+		return new RedirectableRequest(parseOptions(options, protocol), callback);
 	};
 
 	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
