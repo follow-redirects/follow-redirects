@@ -43,6 +43,7 @@ function RedirectableRequest(options, responseCallback) {
 }
 RedirectableRequest.prototype = Object.create(Writable.prototype);
 
+// Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
 	if (this._currentResponse && this._currentResponse.statusCode !== 307) {
 		// This is a redirect, so use only GET methods, except for status 307,
@@ -69,6 +70,7 @@ RedirectableRequest.prototype._performRequest = function () {
 	}
 };
 
+// Processes a response from the current native request
 RedirectableRequest.prototype._processResponse = function (response) {
 	// Emit the response if it is not a redirect
 	if (response.statusCode < 300 || response.statusCode > 399 ||
@@ -91,40 +93,48 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	this._performRequest();
 };
 
+// Aborts the current native request
 RedirectableRequest.prototype.abort = function () {
 	this._currentRequest.abort();
 };
 
+// Ends the current native request
 RedirectableRequest.prototype.end = function (data, encoding, callback) {
 	this._currentRequest.end(data, encoding, callback);
 };
 
+// Flushes the headers of the current native request
 RedirectableRequest.prototype.flushHeaders = function () {
 	this._currentRequest.flushHeaders();
 };
 
+// Sets the noDelay option of the current native request
 RedirectableRequest.prototype.setNoDelay = function (noDelay) {
 	this._currentRequest.setNoDelay(noDelay);
 };
 
+// Sets the socketKeepAlive option of the current native request
 RedirectableRequest.prototype.setSocketKeepAlive = function (enable, initialDelay) {
 	this._currentRequest.setSocketKeepAlive(enable, initialDelay);
 };
 
+// Sets the timeout option of the current native request
 RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 	this._currentRequest.setSocketKeepAlive(timeout, callback);
 };
 
+// Writes buffered data to the current native request
 RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
 	this._currentRequest.write(chunk, encoding, callback);
 };
 
-// Export a wrapper for each native protocol
+// Export a redirecting wrapper for each native protocol
 Object.keys(nativeProtocols).forEach(function (protocol) {
 	var scheme = protocol.substr(0, protocol.length - 1);
 	var nativeProtocol = nativeProtocols[protocol];
 	var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
 
+	// Executes an HTTP request, following redirects
 	wrappedProtocol.request = function (options, callback) {
 		if (typeof options === 'string') {
 			options = url.parse(options);
@@ -141,7 +151,7 @@ Object.keys(nativeProtocols).forEach(function (protocol) {
 		return new RedirectableRequest(options, callback);
 	};
 
-	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
+	// Executes a GET request, following redirects
 	wrappedProtocol.get = function (options, callback) {
 		var request = wrappedProtocol.request(options, callback);
 		request.end();
