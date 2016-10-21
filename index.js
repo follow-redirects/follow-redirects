@@ -112,24 +112,6 @@ function mirrorEvent(source, destination, event) {
 	});
 }
 
-// returns a safe copy of options (or a parsed url object if options was a string).
-// validates that the supplied callback is a function
-function parseOptions(options, protocol) {
-	if (typeof options === 'string') {
-		options = url.parse(options);
-		options.maxRedirects = exports.maxRedirects;
-	} else {
-		options = extend({
-			maxRedirects: exports.maxRedirects,
-			protocol: protocol
-		}, options);
-	}
-	assert.equal(options.protocol, protocol, 'protocol mismatch');
-
-	debug('options', options);
-	return options;
-}
-
 // copies source's own properties onto destination and returns destination
 function extend(destination, source) {
 	var keys = Object.keys(source);
@@ -148,13 +130,26 @@ function isRedirect(response) {
 	'location' in response.headers);
 }
 
+// Export a wrapper for each native protocol
 Object.keys(nativeProtocols).forEach(function (protocol) {
 	var scheme = protocol.substr(0, protocol.length - 1);
 	var nativeProtocol = nativeProtocols[protocol];
 	var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
 
 	wrappedProtocol.request = function (options, callback) {
-		return new RedirectableRequest(parseOptions(options, protocol), callback);
+		if (typeof options === 'string') {
+			options = url.parse(options);
+			options.maxRedirects = exports.maxRedirects;
+		} else {
+			options = extend({
+				maxRedirects: exports.maxRedirects,
+				protocol: protocol
+			}, options);
+		}
+		assert.equal(options.protocol, protocol, 'protocol mismatch');
+		debug('options', options);
+
+		return new RedirectableRequest(options, callback);
 	};
 
 	// see https://github.com/joyent/node/blob/master/lib/http.js#L1623
