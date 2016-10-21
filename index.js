@@ -20,32 +20,51 @@ function RequestProxy(callback) {
 }
 RequestProxy.prototype = Object.create(Writable.prototype);
 
+RequestProxy.prototype._performRequest = function (options, previousResponse, callback) {
+	if (previousResponse && previousResponse.statusCode !== 307) {
+		// This is a redirect, so use only GET methods, except for status 307,
+		// which must honor the previous request method.
+		options.method = 'GET';
+	}
+
+	var request = this._currentRequest =
+								nativeProtocols[options.protocol].request(options, callback);
+	mirrorEvent(request, this, 'abort');
+	mirrorEvent(request, this, 'aborted');
+	mirrorEvent(request, this, 'error');
+
+	// The first request is explicitly ended in RequestProxy#end
+	if (previousResponse) {
+		request.end();
+	}
+};
+
 RequestProxy.prototype.abort = function () {
-	this._request.abort();
+	this._currentRequest.abort();
 };
 
 RequestProxy.prototype.end = function (data, encoding, callback) {
-	this._request.end(data, encoding, callback);
+	this._currentRequest.end(data, encoding, callback);
 };
 
 RequestProxy.prototype.flushHeaders = function () {
-	this._request.flushHeaders();
+	this._currentRequest.flushHeaders();
 };
 
 RequestProxy.prototype.setNoDelay = function (noDelay) {
-	this._request.setNoDelay(noDelay);
+	this._currentRequest.setNoDelay(noDelay);
 };
 
 RequestProxy.prototype.setSocketKeepAlive = function (enable, initialDelay) {
-	this._request.setSocketKeepAlive(enable, initialDelay);
+	this._currentRequest.setSocketKeepAlive(enable, initialDelay);
 };
 
 RequestProxy.prototype.setTimeout = function (timeout, callback) {
-	this._request.setSocketKeepAlive(timeout, callback);
+	this._currentRequest.setSocketKeepAlive(timeout, callback);
 };
 
 RequestProxy.prototype._write = function (chunk, encoding, callback) {
-	this._request.write(chunk, encoding, callback);
+	this._currentRequest.write(chunk, encoding, callback);
 };
 
 function execute(options, callback) {
@@ -77,38 +96,15 @@ function execute(options, callback) {
 			requestProxy.emit('error', err);
 			return;
 		}
-
-		var request = performRequest(options, previousResponse, nextRequest);
-		requestProxy._request = request;
-		mirrorEvent(request, 'abort');
-		mirrorEvent(request, 'aborted');
-		mirrorEvent(request, 'error');
-		return request;
+		requestProxy._performRequest(options, previousResponse, nextRequest);
 	}
+}
 
-	function performRequest(options, previousResponse, callback) {
-		if (previousResponse && previousResponse.statusCode !== 307) {
-			// This is a redirect, so use only GET methods, except for status 307,
-			// which must honor the previous request method.
-			options.method = 'GET';
-		}
-
-		var request = nativeProtocols[options.protocol].request(options, callback);
-
-		if (previousResponse) {
-			// We leave the user to call `end` on the first request
-			request.end();
-		}
-
-		return request;
-	}
-
-	// send events through the proxy
-	function mirrorEvent(request, event) {
-		request.on(event, function (arg) {
-			requestProxy.emit(event, arg);
-		});
-	}
+// send events through the proxy
+function mirrorEvent(source, destination, event) {
+	source.on(event, function (arg) {
+		destination.emit(event, arg);
+	});
 }
 
 // returns a safe copy of options (or a parsed url object if options was a string).
