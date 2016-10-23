@@ -145,7 +145,7 @@ RedirectableRequest.prototype.setSocketKeepAlive = function (enable, initialDela
 
 // Sets the timeout option of the current native request
 RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
-	this._currentRequest.setSocketKeepAlive(timeout, callback);
+	this._currentRequest.setTimeout(timeout, callback);
 };
 
 // Writes buffered data to the current native request
