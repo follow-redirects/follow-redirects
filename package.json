@@ -29,7 +29,8 @@
     "url": "http://www.syskall.com"
   },
   "contributors": [
-    "James Talmage <james@talmage.io>"
+    "James Talmage <james@talmage.io>",
+    "Ruben Verborgh <ruben@verborgh.org> (https://ruben.verborgh.org/)"
   ],
   "files": [
     "index.js",
