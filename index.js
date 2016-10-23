@@ -7,13 +7,20 @@ var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
-var mirroredEvents = ['abort', 'aborted', 'error'];
 var exports = module.exports = {
 	maxRedirects: 21
 };
 // RFC7231§4.2.1: Of the request methods defined by this specification,
 // the GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.
 var safeMethods = {GET: true, HEAD: true, OPTIONS: true, TRACE: true};
+
+// Create handlers that pass events from native requests
+var eventHandlers = Object.create(null);
+['abort', 'aborted', 'error'].forEach(function (event) {
+	eventHandlers[event] = function (arg) {
+		this._redirectable.emit(event, arg);
+	};
+});
 
 // An HTTP(S) request that can be redirected
 function RedirectableRequest(options, responseCallback) {
@@ -33,14 +40,6 @@ function RedirectableRequest(options, responseCallback) {
 		self._processResponse(response);
 	};
 
-	// Create handlers to mirror events from native requests
-	var eventMirrors = this._eventMirrors = Object.create(null);
-	mirroredEvents.forEach(function (event) {
-		eventMirrors[event] = function (arg) {
-			self.emit(event, arg);
-		};
-	});
-
 	// Perform the first request
 	this._performRequest();
 }
@@ -54,10 +53,11 @@ RedirectableRequest.prototype._performRequest = function () {
 								protocol.request(this._options, this._onNativeResponse);
 	this._currentUrl = url.format(this._options);
 
-	// Mirror events from the native request
-	for (var event in this._eventMirrors) {
+	// Set up event handlers
+	request._redirectable = this;
+	for (var event in eventHandlers) {
 		if (event) {
-			request.on(event, this._eventMirrors[event]);
+			request.on(event, eventHandlers[event]);
 		}
 	}
 
