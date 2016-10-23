@@ -7,6 +7,7 @@ var Writable = require('stream').Writable;
 var debug = require('debug')('follow-redirects');
 
 var nativeProtocols = {'http:': http, 'https:': https};
+var schemes = {};
 var exports = module.exports = {
 	maxRedirects: 21
 };
@@ -47,10 +48,17 @@ RedirectableRequest.prototype = Object.create(Writable.prototype);
 
 // Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
-	// Create the native request through the native protocol
-	var protocol = nativeProtocols[this._options.protocol];
+	// If specified, use the agent corresponding to the protocol
+	// (HTTP and HTTPS use different types of agents)
+	var protocol = this._options.protocol;
+	if (this._options.agents) {
+		this._options.agent = this._options.agents[schemes[protocol]];
+	}
+
+	// Create the native request
+	var nativeProtocol = nativeProtocols[this._options.protocol];
 	var request = this._currentRequest =
-								protocol.request(this._options, this._onNativeResponse);
+				nativeProtocol.request(this._options, this._onNativeResponse);
 	this._currentUrl = url.format(this._options);
 
 	// Set up event handlers
@@ -149,7 +157,7 @@ RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
 
 // Export a redirecting wrapper for each native protocol
 Object.keys(nativeProtocols).forEach(function (protocol) {
-	var scheme = protocol.substr(0, protocol.length - 1);
+	var scheme = schemes[protocol] = protocol.substr(0, protocol.length - 1);
 	var nativeProtocol = nativeProtocols[protocol];
 	var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
 

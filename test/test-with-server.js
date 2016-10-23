@@ -415,6 +415,41 @@ describe('follow-redirects ', function () {
 				.nodeify(done);
 		});
 	});
+
+	describe('should choose the right agent per protocol', function () {
+		it('(https -> http -> https)', function (done) {
+			app.get('/a', redirectsTo('http://localhost:3600/b'));
+			app2.get('/b', redirectsTo('https://localhost:3601/c'));
+			app.get('/c', sendsJson({yes: 'no'}));
+
+			var httpAgent = addRequestLogging(new http.Agent());
+			var httpsAgent = addRequestLogging(new https.Agent());
+			function addRequestLogging(agent) {
+				agent._requests = [];
+				agent._addRequest = agent.addRequest;
+				agent.addRequest = function (request, options) {
+					this._requests.push(options.path);
+					this._addRequest(request, options);
+				};
+				return agent;
+			}
+
+			BPromise.all([server.start(httpsOptions(app)), server.start(app2)])
+				.then(asPromise(function (resolve, reject) {
+					var opts = url.parse('https://localhost:3601/a');
+					opts.ca = ca;
+					opts.agents = {http: httpAgent, https: httpsAgent};
+					https.get(opts, concatJson(resolve, reject)).on('error', reject);
+				}))
+				.then(function (res) {
+					assert.deepEqual(httpAgent._requests, ['/b']);
+					assert.deepEqual(httpsAgent._requests, ['/a', '/c']);
+					assert.deepEqual(res.parsedJson, {yes: 'no'});
+					assert.deepEqual(res.responseUrl, 'https://localhost:3601/c');
+				})
+				.nodeify(done);
+		});
+	});
 });
 
 function noop() {}
