@@ -396,6 +396,25 @@ describe('follow-redirects ', function () {
 			})
 			.nodeify(done);
 	});
+
+	describe('when the followRedirects option is set to false', function () {
+		it('does not redirect', function (done) {
+			app.get('/a', redirectsTo(302, '/b'));
+			app.get('/b', sendsJson({a: 'b'}));
+
+			server.start(app)
+				.then(asPromise(function (resolve, reject) {
+					var opts = url.parse('http://localhost:3600/a');
+					opts.followRedirects = false;
+					http.get(opts, resolve).on('error', reject);
+				}))
+				.then(function (res) {
+					assert.deepEqual(res.statusCode, 302);
+					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/a');
+				})
+				.nodeify(done);
+		});
+	});
 });
 
 function noop() {}

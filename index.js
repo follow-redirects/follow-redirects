@@ -76,7 +76,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	// referenced by the Location field value,
 	// even if the specific status code is not understood.
 	if (response.statusCode >= 300 && response.statusCode < 400 &&
-			response.headers.location) {
+			response.headers.location && this._options.followRedirects !== false) {
 		// RFC7231§6.4: A client SHOULD detect and intervene
 		// in cyclical redirections (i.e., "infinite" redirection loops).
 		if (++this._redirectCount > this._options.maxRedirects) {
