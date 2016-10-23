@@ -11,6 +11,9 @@ var mirroredEvents = ['abort', 'aborted', 'error'];
 var exports = module.exports = {
 	maxRedirects: 21
 };
+// RFC7231§4.2.1: Of the request methods defined by this specification,
+// the GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.
+var safeMethods = {GET: true, HEAD: true, OPTIONS: true, TRACE: true};
 
 // An HTTP(S) request that can be redirected
 function RedirectableRequest(options, responseCallback) {
@@ -45,12 +48,6 @@ RedirectableRequest.prototype = Object.create(Writable.prototype);
 
 // Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
-	if (this._currentResponse && this._currentResponse.statusCode !== 307) {
-		// This is a redirect, so use only GET methods, except for status 307,
-		// which must honor the previous request method.
-		this._options.method = 'GET';
-	}
-
 	// Create the native request through the native protocol
 	var protocol = nativeProtocols[this._options.protocol];
 	var request = this._currentRequest =
@@ -72,25 +69,47 @@ RedirectableRequest.prototype._performRequest = function () {
 
 // Processes a response from the current native request
 RedirectableRequest.prototype._processResponse = function (response) {
-	// Emit the response if it is not a redirect
-	if (response.statusCode < 300 || response.statusCode > 399 ||
-			!response.headers.location) {
+	// RFC7231§6.4: The 3xx (Redirection) class of status code indicates
+	// that further action needs to be taken by the user agent in order to
+	// fulfill the request. If a Location header field is provided,
+	// the user agent MAY automatically redirect its request to the URI
+	// referenced by the Location field value,
+	// even if the specific status code is not understood.
+	if (response.statusCode >= 300 && response.statusCode < 400 &&
+			response.headers.location) {
+		// RFC7231§6.4: A client SHOULD detect and intervene
+		// in cyclical redirections (i.e., "infinite" redirection loops).
+		if (++this._redirectCount > this._options.maxRedirects) {
+			return this.emit('error', new Error('Max redirects exceeded.'));
+		}
+
+		// RFC7231§6.4.7: The 307 (Temporary Redirect) status code indicates
+		// that the target resource resides temporarily under a different URI
+		// and the user agent MUST NOT change the request method
+		// if it performs an automatic redirection to that URI.
+		if (response.statusCode !== 307) {
+			// RFC7231§6.4: Automatic redirection needs to done with
+			// care for methods not known to be safe […],
+			// since the user might not wish to redirect an unsafe request.
+			if (!(this._options.method in safeMethods)) {
+				this._options.method = 'GET';
+			}
+		}
+
+		// Resolve the location URI
+		var location = response.headers.location;
+		var redirectUrl = url.resolve(this._currentUrl, location);
+		debug('redirecting to', redirectUrl);
+
+		// Perform the redirected request
+		Object.assign(this._options, url.parse(redirectUrl));
+		this._currentResponse = response;
+		this._performRequest();
+	} else {
+		// The response is not a redirect; return it as-is
 		response.redirectUrl = this._currentUrl;
 		return this.emit('response', response);
 	}
-
-	// Only allow a limited number of redirects
-	if (++this._redirectCount > this._options.maxRedirects) {
-		return this.emit('error', new Error('Max redirects exceeded.'));
-	}
-
-	// Create and execute a redirect request
-	var location = response.headers.location;
-	var redirectUrl = url.resolve(this._currentUrl, location);
-	debug('redirecting to', redirectUrl);
-	Object.assign(this._options, url.parse(redirectUrl));
-	this._currentResponse = response;
-	this._performRequest();
 };
 
 // Aborts the current native request

@@ -85,7 +85,7 @@ describe('follow-redirects ', function () {
 			.nodeify(done);
 	});
 
-	it('should return with a 300 code if the response does not contain a location header', function (done) {
+	it('should return with the original status code if the response does not contain a location header', function (done) {
 		app.get('/a', function (req, res) {
 			res.status(307).end();
 		});
@@ -287,6 +287,49 @@ describe('follow-redirects ', function () {
 		});
 	});
 
+	describe('should switch to safe methods when appropriate', function () {
+		function mustUseSameMethod(statusCode, useSameMethod) {
+			describe('when redirecting with status code ' + statusCode, function () {
+				itRedirectsWith(statusCode, 'GET', 'GET');
+				itRedirectsWith(statusCode, 'HEAD', 'HEAD');
+				itRedirectsWith(statusCode, 'OPTIONS', 'OPTIONS');
+				itRedirectsWith(statusCode, 'TRACE', 'TRACE');
+				itRedirectsWith(statusCode, 'POST', useSameMethod ? 'POST' : 'GET');
+				itRedirectsWith(statusCode, 'PUT', useSameMethod ? 'PUT' : 'GET');
+			});
+		}
+
+		function itRedirectsWith(statusCode, method, expectedMethod) {
+			var description = 'should ' +
+					(method === expectedMethod ? 'reuse ' + method :
+						'switch from ' + method + ' to ' + expectedMethod);
+			it(description, function (done) {
+				app[method.toLowerCase()]('/a', redirectsTo(statusCode, '/b'));
+				app[expectedMethod.toLowerCase()]('/b', sendsJson({a: 'b'}));
+
+				server.start(app)
+					.then(asPromise(function (resolve, reject) {
+						var opts = url.parse('http://localhost:3600/a');
+						opts.method = method;
+						http.request(opts, resolve).on('error', reject).end();
+					}))
+					.then(function (res) {
+						assert.deepEqual(res.redirectUrl, 'http://localhost:3600/b');
+						if (res.statusCode !== 200) {
+							throw new Error('Did not use ' + expectedMethod);
+						}
+					})
+					.nodeify(done);
+			});
+		}
+
+		mustUseSameMethod(300, false);
+		mustUseSameMethod(301, false);
+		mustUseSameMethod(302, false);
+		mustUseSameMethod(303, false);
+		mustUseSameMethod(307, true);
+	});
+
 	describe('should handle cross protocol redirects ', function () {
 		it('(https -> http -> https)', function (done) {
 			app.get('/a', redirectsTo('http://localhost:3600/b'));
@@ -320,31 +363,6 @@ describe('follow-redirects ', function () {
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {hello: 'goodbye'});
 					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/c');
-				})
-				.nodeify(done);
-		});
-	});
-
-	describe('should honor 307 redirects', function () {
-		it('reuses previous request method', function (done) {
-			app.post('/a', redirectsTo(307, 'http://localhost:3600/b'));
-			app.post('/b', function (req, res) {
-				res.status(200).end();
-			});
-
-			var options = {
-				path: '/a',
-				method: 'POST',
-				port: 3600
-			};
-
-			server.start(app)
-				.then(asPromise(function (resolve, reject) {
-					http.request(options, resolve).on('error', reject).end();
-				}))
-				.then(function (res) {
-					assert.equal(res.statusCode, 200);
-					res.on('data', noop);
 				})
 				.nodeify(done);
 		});
