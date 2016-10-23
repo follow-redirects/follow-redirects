@@ -1,6 +1,6 @@
 ## Follow Redirects
 
-Drop in replacement for Nodes `http` and `https` that automatically follows redirects.
+Drop-in replacement for Nodes `http` and `https` that automatically follows redirects.
 
 [![npm version](https://badge.fury.io/js/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
 [![Build Status](https://travis-ci.org/olalonde/follow-redirects.svg?branch=master)](https://travis-ci.org/olalonde/follow-redirects)
@@ -19,8 +19,8 @@ Drop in replacement for Nodes `http` and `https` that automatically follows redi
 var http = require('follow-redirects').http;
 var https = require('follow-redirects').https;
 
-http.get('http://bit.ly/900913', function (res) {
-  res.on('data', function (chunk) {
+http.get('http://bit.ly/900913', function (response) {
+  response.on('data', function (chunk) {
     console.log(chunk);
   });
 }).on('error', function (err) {
@@ -28,36 +28,58 @@ http.get('http://bit.ly/900913', function (res) {
 });
 ```
 
-By default the number of redirects is limited to 5, but you can modify that globally or per request.
-
-```javascript
-require('follow-redirects').maxRedirects = 10;   // Has global affect (be careful!)
-
-https.request({
-  host: 'bitly.com',
-  path: '/UHfDGO',
-  maxRedirects: 3   // per request setting
-}, function (res) {/* ... */});
-```
-
-You can inspect the redirection chain from the `fetchedUrls` array on the `response`.
-The array is populated in reverse order, so the original url you requested will be the
-last element, while the final redirection point will be at index 0.
+You can inspect the final redirected URL through the `responseUrl` property on the `response`.
+If no redirection happened, `responseUrl` is the original request URL.
 
 ```javascript
 https.request({
   host: 'bitly.com',
   path: '/UHfDGO',
-}, function (res) {
-  console.log(res.fetchedUrls);
-  // [ 'http://duckduckgo.com/robots.txt',  'http://bitly.com/UHfDGO' ]
+}, function (response) {
+  console.log(response.responseUrl);
+  // 'http://duckduckgo.com/robots.txt'
 });
 ```
+
+## Options
+### Global options
+Global options are set directly on the `follow-redirects` module:
+
+```javascript
+var followRedirects = require('follow-redirects');
+followRedirects.maxRedirects = 10;
+```
+
+The following global options are supported:
+
+- `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
+
+
+### Per-request options
+Per-request options are set by passing an `options` object:
+
+```javascript
+var url = require('url');
+var followRedirects = require('follow-redirects');
+
+var options = url.parse('http://bit.ly/900913');
+options.maxRedirects = 10;
+http.request(options);
+```
+
+In addition to the [standard HTTP](https://nodejs.org/api/http.html#http_http_request_options_callback) and [HTTPS options](https://nodejs.org/api/https.html#https_https_request_options_callback),
+the following per-request options are supported:
+- `followRedirects` (default: `true`) – whether redirects should be followed.
+
+- `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
+
+- `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
+
 
 ## Browserify Usage
 
 Due to the way `XMLHttpRequest` works, the `browserify` versions of `http` and `https` already follow redirects.
- If you are *only* targetting the browser, then this library has little value for you. If you want to write cross
+ If you are *only* targeting the browser, then this library has little value for you. If you want to write cross
  platform code for node and the browser, `follow-redirects` provides a great solution for making the native node
  modules behave the same as they do in browserified builds in the browser. To avoid bundling unnecessary code
  you should tell browserify to swap out `follow-redirects` with the standard modules when bundling.
@@ -104,9 +126,9 @@ Pull Requests are always welcome. Please [file an issue](https://github.com/olal
 
 ## Authors
 
-Olivier Lalonde (olalonde@gmail.com)
-
-James Talmage (james@talmage.io)
+- Olivier Lalonde (olalonde@gmail.com)
+- James Talmage (james@talmage.io)
+- [Ruben Verborgh](https://ruben.verborgh.org/)
 
 ## License
 
