@@ -107,7 +107,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		this._performRequest();
 	} else {
 		// The response is not a redirect; return it as-is
-		response.redirectUrl = this._currentUrl;
+		response.responseUrl = this._currentUrl;
 		return this.emit('response', response);
 	}
 };

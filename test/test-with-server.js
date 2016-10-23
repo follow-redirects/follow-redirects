@@ -59,7 +59,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {a: 'b'});
-				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/f');
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/f');
 			})
 			.nodeify(done);
 	});
@@ -80,7 +80,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {a: 'b'});
-				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/f');
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/f');
 			})
 			.nodeify(done);
 	});
@@ -96,7 +96,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.equal(res.statusCode, 307);
-				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/a');
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
 				res.on('data', function () {
 					// noop to consume the stream (server won't shut down otherwise).
 				});
@@ -130,7 +130,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {baz: 'quz'});
-				assert.deepEqual(res.redirectUrl, 'https://localhost:3601/c');
+				assert.deepEqual(res.responseUrl, 'https://localhost:3601/c');
 			})
 			.nodeify(done);
 	});
@@ -147,7 +147,7 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {greeting: 'hello'});
-				assert.deepEqual(res.redirectUrl, 'http://localhost:3600/b?greeting=hello');
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/b?greeting=hello');
 			})
 			.nodeify(done);
 	});
@@ -247,7 +247,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {foo: 'bar'});
-					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/r0');
+					assert.deepEqual(res.responseUrl, 'http://localhost:3600/r0');
 				})
 				// 22 redirects should fail
 				.then(asPromise(function (resolve, reject) {
@@ -267,7 +267,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {foo: 'bar'});
-					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/r0');
+					assert.deepEqual(res.responseUrl, 'http://localhost:3600/r0');
 				})
 				.nodeify(done);
 		});
@@ -314,7 +314,7 @@ describe('follow-redirects ', function () {
 						http.request(opts, resolve).on('error', reject).end();
 					}))
 					.then(function (res) {
-						assert.deepEqual(res.redirectUrl, 'http://localhost:3600/b');
+						assert.deepEqual(res.responseUrl, 'http://localhost:3600/b');
 						if (res.statusCode !== 200) {
 							throw new Error('Did not use ' + expectedMethod);
 						}
@@ -344,7 +344,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {yes: 'no'});
-					assert.deepEqual(res.redirectUrl, 'https://localhost:3601/c');
+					assert.deepEqual(res.responseUrl, 'https://localhost:3601/c');
 				})
 				.nodeify(done);
 		});
@@ -362,7 +362,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.parsedJson, {hello: 'goodbye'});
-					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/c');
+					assert.deepEqual(res.responseUrl, 'http://localhost:3600/c');
 				})
 				.nodeify(done);
 		});
@@ -410,7 +410,7 @@ describe('follow-redirects ', function () {
 				}))
 				.then(function (res) {
 					assert.deepEqual(res.statusCode, 302);
-					assert.deepEqual(res.redirectUrl, 'http://localhost:3600/a');
+					assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
 				})
 				.nodeify(done);
 		});
