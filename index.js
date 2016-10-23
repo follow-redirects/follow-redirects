@@ -83,8 +83,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	// the user agent MAY automatically redirect its request to the URI
 	// referenced by the Location field value,
 	// even if the specific status code is not understood.
-	if (response.statusCode >= 300 && response.statusCode < 400 &&
-			response.headers.location && this._options.followRedirects !== false) {
+	var location = response.headers.location;
+	if (location && this._options.followRedirects !== false &&
+			response.statusCode >= 300 && response.statusCode < 400) {
 		// RFC7231§6.4: A client SHOULD detect and intervene
 		// in cyclical redirections (i.e., "infinite" redirection loops).
 		if (++this._redirectCount > this._options.maxRedirects) {
@@ -104,12 +105,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
 			}
 		}
 
-		// Resolve the location URI
-		var location = response.headers.location;
+		// Perform the redirected request
 		var redirectUrl = url.resolve(this._currentUrl, location);
 		debug('redirecting to', redirectUrl);
-
-		// Perform the redirected request
 		Object.assign(this._options, url.parse(redirectUrl));
 		this._currentResponse = response;
 		this._performRequest();
