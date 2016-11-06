@@ -368,8 +368,97 @@ describe('follow-redirects ', function () {
 		});
 	});
 
-	it('should support piping into request stream', function (done) {
+	it('should support writing into request stream without redirects', function (done) {
 		app.post('/a', function (req, res) {
+			req.pipe(res);
+		});
+
+		var opts = url.parse('http://localhost:3600/a');
+		opts.method = 'POST';
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var req = http.request(opts, resolve);
+				req.end(fs.readFileSync(__filename), 'buffer');
+				req.on('error', reject);
+			}))
+			.then(asPromise(function (resolve, reject, res) {
+				var str = '';
+				res.on('data', function (chunk) {
+					str += chunk.toString('utf8');
+				});
+				res.on('end', function () {
+					resolve(str);
+				});
+			}))
+			.then(function (str) {
+				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
+			})
+			.nodeify(done);
+	});
+
+	it('should support writing into request stream with redirects', function (done) {
+		app.post('/a', redirectsTo(307, 'http://localhost:3600/b'));
+		app.post('/b', function (req, res) {
+			req.pipe(res);
+		});
+
+		var opts = url.parse('http://localhost:3600/a');
+		opts.method = 'POST';
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var req = http.request(opts, resolve);
+				req.end(fs.readFileSync(__filename), 'buffer');
+				req.on('error', reject);
+			}))
+			.then(asPromise(function (resolve, reject, res) {
+				var str = '';
+				res.on('data', function (chunk) {
+					str += chunk.toString('utf8');
+				});
+				res.on('end', function () {
+					resolve(str);
+				});
+			}))
+			.then(function (str) {
+				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
+			})
+			.nodeify(done);
+	});
+
+	it('should support piping into request stream without redirects', function (done) {
+		app.post('/a', function (req, res) {
+			req.pipe(res);
+		});
+
+		var opts = url.parse('http://localhost:3600/a');
+		opts.method = 'POST';
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var req = http.request(opts, resolve);
+				fs.createReadStream(__filename).pipe(req);
+				req.on('error', reject);
+			}))
+			.then(asPromise(function (resolve, reject, res) {
+				var str = '';
+				res.on('data', function (chunk) {
+					str += chunk.toString('utf8');
+				});
+				res.on('end', function () {
+					resolve(str);
+				});
+			}))
+			.then(function (str) {
+				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
+			})
+			.nodeify(done);
+	});
+
+	it('should support piping into request stream with redirects', function (done) {
+		app.post('/a', redirectsTo(307, 'http://localhost:3600/b'));
+		app.post('/b', function (req, res) {
 			req.pipe(res);
 		});
 

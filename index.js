@@ -29,6 +29,7 @@ function RedirectableRequest(options, responseCallback) {
 	Writable.call(this);
 	this._options = options;
 	this._redirectCount = 0;
+	this._bufferedWrites = [];
 
 	// Attach a callback if passed
 	if (responseCallback) {
@@ -69,9 +70,26 @@ RedirectableRequest.prototype._performRequest = function () {
 		}
 	}
 
-	// The first request is explicitly ended in RedirectableRequest#end
+	// End a redirected request
+	// (The first request must be ended explicitly with RedirectableRequest#end)
 	if (this._currentResponse) {
-		request.end();
+		// If no body was written to the original request, or the method was changed to GET,
+		// end the redirected request (without writing a body).
+		var bufferedWrites = this._bufferedWrites;
+		if (bufferedWrites.length === 0 || this._options.method === 'GET') {
+			request.end();
+		// The body of the original request must be added to the redirected request.
+		} else {
+			var i = 0;
+			(function writeNext() {
+				if (i < bufferedWrites.length) {
+					var bufferedWrite = bufferedWrites[i++];
+					request.write(bufferedWrite.data, bufferedWrite.encoding, writeNext);
+				} else {
+					request.end();
+				}
+			})();
+		}
 	}
 };
 
@@ -114,18 +132,17 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	} else {
 		// The response is not a redirect; return it as-is
 		response.responseUrl = this._currentUrl;
-		return this.emit('response', response);
+		this.emit('response', response);
+
+		// Clean up
+		delete this._options;
+		delete this._bufferedWrites;
 	}
 };
 
 // Aborts the current native request
 RedirectableRequest.prototype.abort = function () {
 	this._currentRequest.abort();
-};
-
-// Ends the current native request
-RedirectableRequest.prototype.end = function (data, encoding, callback) {
-	this._currentRequest.end(data, encoding, callback);
 };
 
 // Flushes the headers of the current native request
@@ -149,8 +166,17 @@ RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 };
 
 // Writes buffered data to the current native request
-RedirectableRequest.prototype._write = function (chunk, encoding, callback) {
-	this._currentRequest.write(chunk, encoding, callback);
+RedirectableRequest.prototype._write = function (data, encoding, callback) {
+	this._currentRequest.write(data, encoding, callback);
+	this._bufferedWrites.push({data: data, encoding: encoding});
+};
+
+// Ends the current native request
+RedirectableRequest.prototype.end = function (data, encoding, callback) {
+	this._currentRequest.end(data, encoding, callback);
+	if (data) {
+		this._bufferedWrites.push({data: data, encoding: encoding});
+	}
 };
 
 // Export a redirecting wrapper for each native protocol
