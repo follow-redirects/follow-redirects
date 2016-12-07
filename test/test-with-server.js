@@ -1,6 +1,7 @@
 describe('follow-redirects ', function () {
 	var express = require('express');
 	var assert = require('assert');
+	var net = require('net');
 	var server = require('./lib/test-server')({
 		https: 3601,
 		http: 3600
@@ -113,6 +114,21 @@ describe('follow-redirects ', function () {
 			}))
 			.then(function (error) {
 				assert.equal(error.code, 'ECONNREFUSED');
+			})
+			.nodeify(done);
+	});
+
+	it('should emit socket events on the returned stream', function (done) {
+		app.get('/a', sendsJson({a: 'b'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				http.get('http://localhost:3600/a')
+						.on('socket', resolve)
+						.on('error', reject);
+			}))
+			.then(function (socket) {
+				assert(socket instanceof net.Socket, 'socket event should emit with socket');
 			})
 			.nodeify(done);
 	});
