@@ -74,12 +74,11 @@ RedirectableRequest.prototype._performRequest = function () {
 	// End a redirected request
 	// (The first request must be ended explicitly with RedirectableRequest#end)
 	if (this._currentResponse) {
-		// If no body was written to the original request, or the method was changed to GET,
-		// end the redirected request (without writing a body).
+		// If the request doesn't have en entity, end directly.
 		var bufferedWrites = this._bufferedWrites;
-		if (bufferedWrites.length === 0 || this._options.method === 'GET') {
+		if (bufferedWrites.length === 0) {
 			request.end();
-		// The body of the original request must be added to the redirected request.
+		// Otherwise, write the request entity and end afterwards.
 		} else {
 			var i = 0;
 			(function writeNext() {
@@ -111,16 +110,21 @@ RedirectableRequest.prototype._processResponse = function (response) {
 			return this.emit('error', new Error('Max redirects exceeded.'));
 		}
 
+		// RFC7231§6.4: Automatic redirection needs to done with
+		// care for methods not known to be safe […],
+		// since the user might not wish to redirect an unsafe request.
 		// RFC7231§6.4.7: The 307 (Temporary Redirect) status code indicates
 		// that the target resource resides temporarily under a different URI
 		// and the user agent MUST NOT change the request method
 		// if it performs an automatic redirection to that URI.
-		if (response.statusCode !== 307) {
-			// RFC7231§6.4: Automatic redirection needs to done with
-			// care for methods not known to be safe […],
-			// since the user might not wish to redirect an unsafe request.
-			if (!(this._options.method in safeMethods)) {
-				this._options.method = 'GET';
+		if (response.statusCode !== 307 && !(this._options.method in safeMethods)) {
+			this._options.method = 'GET';
+			// Drop a possible entity and headers related to it
+			this._bufferedWrites = [];
+			for (var header in this._options.headers) {
+				if (/^content-/i.test(header)) {
+					delete this._options.headers[header];
+				}
 			}
 		}
 

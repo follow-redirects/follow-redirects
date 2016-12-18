@@ -532,6 +532,46 @@ describe('follow-redirects ', function () {
 			.nodeify(done);
 	});
 
+	describe('should drop the entity and associated headers', function () {
+		function itDropsBodyAndHeaders(originalMethod) {
+			it('when switching from ' + originalMethod + ' to GET', function (done) {
+				app[originalMethod.toLowerCase()]('/a', redirectsTo(302, 'http://localhost:3600/b'));
+				app.get('/b', function (req, res) {
+					res.write(JSON.stringify(req.headers));
+					req.pipe(res); // will invalidate JSON if non-empty
+				});
+
+				var opts = url.parse('http://localhost:3600/a');
+				opts.method = originalMethod;
+				opts.headers = {
+					other: 'value',
+					'content-type': 'application/javascript',
+					'Content-Length': fs.readFileSync(__filename).byteLength
+				};
+
+				server.start(app)
+					.then(asPromise(function (resolve, reject) {
+						var req = http.request(opts, resolve);
+						fs.createReadStream(__filename).pipe(req);
+						req.on('error', reject);
+					}))
+					.then(asPromise(function (resolve, reject, res) {
+						res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
+					}))
+					.then(function (str) {
+						var body = JSON.parse(str);
+						assert.equal(body.host, 'localhost:3600');
+						assert.equal(body.other, 'value');
+						assert.equal(body['content-type'], undefined);
+						assert.equal(body['content-length'], undefined);
+					})
+					.nodeify(done);
+			});
+		}
+		itDropsBodyAndHeaders('POST');
+		itDropsBodyAndHeaders('PUT');
+	});
+
 	describe('when the followRedirects option is set to false', function () {
 		it('does not redirect', function (done) {
 			app.get('/a', redirectsTo(302, '/b'));
