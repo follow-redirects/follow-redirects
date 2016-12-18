@@ -315,24 +315,24 @@ describe('follow-redirects ', function () {
 			});
 		}
 
-		function itRedirectsWith(statusCode, method, expectedMethod) {
+		function itRedirectsWith(statusCode, originalMethod, redirectedMethod) {
 			var description = 'should ' +
-					(method === expectedMethod ? 'reuse ' + method :
-						'switch from ' + method + ' to ' + expectedMethod);
+					(originalMethod === redirectedMethod ? 'reuse ' + originalMethod :
+						'switch from ' + originalMethod + ' to ' + redirectedMethod);
 			it(description, function (done) {
-				app[method.toLowerCase()]('/a', redirectsTo(statusCode, '/b'));
-				app[expectedMethod.toLowerCase()]('/b', sendsJson({a: 'b'}));
+				app[originalMethod.toLowerCase()]('/a', redirectsTo(statusCode, '/b'));
+				app[redirectedMethod.toLowerCase()]('/b', sendsJson({a: 'b'}));
 
 				server.start(app)
 					.then(asPromise(function (resolve, reject) {
 						var opts = url.parse('http://localhost:3600/a');
-						opts.method = method;
+						opts.method = originalMethod;
 						http.request(opts, resolve).on('error', reject).end();
 					}))
 					.then(function (res) {
 						assert.deepEqual(res.responseUrl, 'http://localhost:3600/b');
 						if (res.statusCode !== 200) {
-							throw new Error('Did not use ' + expectedMethod);
+							throw new Error('Did not use ' + redirectedMethod);
 						}
 					})
 					.nodeify(done);
