@@ -65,6 +65,7 @@ RedirectableRequest.prototype._performRequest = function () {
 	// Set up event handlers
 	request._redirectable = this;
 	for (var event in eventHandlers) {
+		/* istanbul ignore else */
 		if (event) {
 			request.on(event, eventHandlers[event]);
 		}
