@@ -13,6 +13,7 @@ describe('follow-redirects ', function () {
 	var BPromise = require('bluebird');
 
 	var util = require('./lib/util');
+	var concat = require('concat-stream');
 	var concatJson = util.concatJson;
 	var redirectsTo = util.redirectsTo;
 	var sendsJson = util.sendsJson;
@@ -399,13 +400,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
@@ -429,13 +424,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
@@ -458,13 +447,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
@@ -488,13 +471,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
@@ -520,13 +497,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
@@ -553,13 +524,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
-				var str = '';
-				res.on('data', function (chunk) {
-					str += chunk.toString('utf8');
-				});
-				res.on('end', function () {
-					resolve(str);
-				});
+				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
 				assert.equal(str, fs.readFileSync(__filename, 'utf8'));
