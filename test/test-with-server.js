@@ -618,6 +618,37 @@ describe('follow-redirects ', function () {
 		});
 	});
 
+	describe('should handle redirection to a different domain', function () {
+		it('even if "headers.Host" has been set (testing with google.com)', function (done) {
+			function callback(resolve, reject) {
+				return function (res) {
+					res.pipe(concat({encoding: 'string'}, function () {
+						try {
+							resolve(res);
+						} catch (err) {
+							reject(new Error('error resolving ' + res + '\n caused by: ' + err.message));
+						}
+					})).on('error', reject);
+				};
+			}
+
+			BPromise.all([])
+				.then(asPromise(function (resolve, reject) {
+					var opts = {
+						headers: {
+							Host: 'google.com'
+						},
+						host: 'google.com'
+					};
+					http.get(opts, callback(resolve, reject)).on('error', reject);
+				}))
+				.then(function (res) {
+					assert(res.responseUrl.includes('www.google'));
+				})
+				.nodeify(done);
+		});
+	});
+
 	describe('should choose the right agent per protocol', function () {
 		it('(https -> http -> https)', function (done) {
 			app.get('/a', redirectsTo('http://localhost:3600/b'));
