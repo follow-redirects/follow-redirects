@@ -133,10 +133,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		debug('redirecting to', redirectUrl);
 		Object.assign(this._options, url.parse(redirectUrl));
 		// Fix: 'this._options.headers.Host' may be inconsistent with the new value of 'this._options.host', which may
-		// be the cause of unlimited redirections. The following line manually fixes such an inconsistency and addresses
-		// issue #53.
-		if (Object.prototype.hasOwnProperty.call(this._options, 'headers') && (this._options.headers.Host !== this._options.host)) {
-			this._options.headers.Host = this._options.host;
+		// be the cause of unlimited redirections (issue 53). The following line remove the outdated
+		// 'this._options.headers.Host' property.
+		if (Object.prototype.hasOwnProperty.call(this._options, 'headers') && Object.prototype.hasOwnProperty.call(this._options.headers, 'Host')) {
+			delete this._options.headers.Host;
 		}
 		this._currentResponse = response;
 		this._performRequest();
