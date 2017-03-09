@@ -572,6 +572,33 @@ describe('follow-redirects ', function () {
 		itDropsBodyAndHeaders('PUT');
 	});
 
+	describe('when redirecting to a different host while the host header is set', function () {
+		it('uses the new host header', function (done) {
+			app.get('/a', redirectsTo(302, 'http://localhost:3600/b'));
+			app.get('/b', function (req, res) {
+				res.write(JSON.stringify(req.headers));
+				req.pipe(res); // will invalidate JSON if non-empty
+			});
+
+			server.start(app)
+				.then(asPromise(function (resolve, reject) {
+					var opts = url.parse('http://localhost:3600/a');
+					opts.headers = {hOsT: 'otherhost.com'};
+					http.get(opts, resolve).on('error', reject);
+				}))
+				.then(asPromise(function (resolve, reject, res) {
+					assert.deepEqual(res.statusCode, 200);
+					assert.deepEqual(res.responseUrl, 'http://localhost:3600/b');
+					res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
+				}))
+				.then(function (str) {
+					var body = JSON.parse(str);
+					assert.equal(body.host, 'localhost:3600');
+				})
+				.nodeify(done);
+		});
+	});
+
 	describe('when the followRedirects option is set to false', function () {
 		it('does not redirect', function (done) {
 			app.get('/a', redirectsTo(302, '/b'));

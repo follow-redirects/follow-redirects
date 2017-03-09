@@ -117,14 +117,23 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		// that the target resource resides temporarily under a different URI
 		// and the user agent MUST NOT change the request method
 		// if it performs an automatic redirection to that URI.
+		var header;
+		var headers = this._options.headers;
 		if (response.statusCode !== 307 && !(this._options.method in safeMethods)) {
 			this._options.method = 'GET';
 			// Drop a possible entity and headers related to it
 			this._bufferedWrites = [];
-			for (var header in this._options.headers) {
+			for (header in headers) {
 				if (/^content-/i.test(header)) {
-					delete this._options.headers[header];
+					delete headers[header];
 				}
+			}
+		}
+
+		// Drop the Host header, as the redirect might lead to a different host
+		for (header in headers) {
+			if (/^host$/i.test(header)) {
+				delete headers[header];
 			}
 		}
 
