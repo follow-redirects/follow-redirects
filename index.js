@@ -131,9 +131,11 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		}
 
 		// Drop the Host header, as the redirect might lead to a different host
-		for (header in headers) {
-			if (/^host$/i.test(header)) {
-				delete headers[header];
+		if (!this._isRedirect) {
+			for (header in headers) {
+				if (/^host$/i.test(header)) {
+					delete headers[header];
+				}
 			}
 		}
 
