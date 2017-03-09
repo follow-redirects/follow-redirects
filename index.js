@@ -73,7 +73,7 @@ RedirectableRequest.prototype._performRequest = function () {
 
 	// End a redirected request
 	// (The first request must be ended explicitly with RedirectableRequest#end)
-	if (this._currentResponse) {
+	if (this._isRedirect) {
 		// If the request doesn't have en entity, end directly.
 		var bufferedWrites = this._bufferedWrites;
 		if (bufferedWrites.length === 0) {
@@ -141,7 +141,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		var redirectUrl = url.resolve(this._currentUrl, location);
 		debug('redirecting to', redirectUrl);
 		Object.assign(this._options, url.parse(redirectUrl));
-		this._currentResponse = response;
+		this._isRedirect = true;
 		this._performRequest();
 	} else {
 		// The response is not a redirect; return it as-is
