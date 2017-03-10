@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "bluebird": "^3.4.0",
-    "concat-stream": "^1.5.0",
+    "concat-stream": "^1.5.2",
     "coveralls": "^2.11.15",
     "express": "^4.13.0",
     "mocha": "^3.2.0",
