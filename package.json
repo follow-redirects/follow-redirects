@@ -3,6 +3,9 @@
   "version": "1.2.3",
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
+  "engines": {
+    "node": ">=4.0"
+  },
   "scripts": {
     "test": "xo && BLUEBIRD_DEBUG=1 nyc mocha"
   },
