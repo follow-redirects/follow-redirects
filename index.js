@@ -57,7 +57,7 @@ RedirectableRequest.prototype._performRequest = function () {
 	}
 
 	// Create the native request
-	var nativeProtocol = nativeProtocols[this._options.protocol];
+	var nativeProtocol = nativeProtocols[protocol];
 	var request = this._currentRequest =
 				nativeProtocol.request(this._options, this._onNativeResponse);
 	this._currentUrl = url.format(this._options);
