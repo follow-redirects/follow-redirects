@@ -1,3 +1,8 @@
 node_modules
 coverage
 .nyc_output
+
+
+#Idea files ignore
+.idea/
+*.iml

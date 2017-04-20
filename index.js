@@ -218,6 +218,17 @@ Object.keys(nativeProtocols).forEach(function (protocol) {
 		return new RedirectableRequest(options, callback);
 	};
 
+	// Execute a HEAD request for fetch URLS as file download without download content
+	wrappedProtocol.head = function (options, callback) {
+		if (typeof options === 'string') {
+			options = url.parse(options);
+		}
+		options.method = 'HEAD';
+		var request = wrappedProtocol.request(options, callback);
+		request.end();
+		return request;
+	};
+
 	// Executes a GET request, following redirects
 	wrappedProtocol.get = function (options, callback) {
 		var request = wrappedProtocol.request(options, callback);
