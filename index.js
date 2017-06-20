@@ -42,6 +42,17 @@ function RedirectableRequest(options, responseCallback) {
 		self._processResponse(response);
 	};
 
+	// Complete the URL object when necessary
+	if (!options.pathname && options.path) {
+		var searchPos = options.path.indexOf('?');
+		if (searchPos < 0) {
+			options.pathname = options.path;
+		} else {
+			options.pathname = options.path.substring(0, searchPos);
+			options.search = options.path.substring(searchPos);
+		}
+	}
+
 	// Perform the first request
 	this._performRequest();
 }

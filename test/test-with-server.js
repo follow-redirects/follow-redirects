@@ -47,7 +47,7 @@ describe('follow-redirects ', function () {
 		server.stop().nodeify(done);
 	});
 
-	it('http.get with callback', function (done) {
+	it('http.get with string and callback - redirect', function (done) {
 		app.get('/a', redirectsTo('/b'));
 		app.get('/b', redirectsTo('/c'));
 		app.get('/c', redirectsTo('/d'));
@@ -62,6 +62,65 @@ describe('follow-redirects ', function () {
 			.then(function (res) {
 				assert.deepEqual(res.parsedJson, {a: 'b'});
 				assert.deepEqual(res.responseUrl, 'http://localhost:3600/f');
+			})
+			.nodeify(done);
+	});
+
+	it('http.get with options object and callback - redirect', function (done) {
+		app.get('/a', redirectsTo('/b'));
+		app.get('/b', redirectsTo('/c'));
+		app.get('/c', redirectsTo('/d'));
+		app.get('/d', redirectsTo('/e'));
+		app.get('/e', redirectsTo('/f'));
+		app.get('/f', sendsJson({a: 'b'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var options = {
+					hostname: 'localhost',
+					port: 3600,
+					path: '/a',
+					method: 'GET'
+				};
+				http.get(options, concatJson(resolve, reject)).on('error', reject);
+			}))
+			.then(function (res) {
+				assert.deepEqual(res.parsedJson, {a: 'b'});
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/f');
+			})
+			.nodeify(done);
+	});
+
+	it('http.get with string and callback - no redirect', function (done) {
+		app.get('/a', sendsJson({a: 'b'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				http.get('http://localhost:3600/a', concatJson(resolve, reject)).on('error', reject);
+			}))
+			.then(function (res) {
+				assert.deepEqual(res.parsedJson, {a: 'b'});
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
+			})
+			.nodeify(done);
+	});
+
+	it('http.get with options object and callback - no redirect', function (done) {
+		app.get('/a', sendsJson({a: 'b'}));
+
+		server.start(app)
+			.then(asPromise(function (resolve, reject) {
+				var options = {
+					hostname: 'localhost',
+					port: 3600,
+					path: '/a?xyz',
+					method: 'GET'
+				};
+				http.get(options, concatJson(resolve, reject)).on('error', reject);
+			}))
+			.then(function (res) {
+				assert.deepEqual(res.parsedJson, {a: 'b'});
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a?xyz');
 			})
 			.nodeify(done);
 	});
@@ -400,6 +459,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
 				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
@@ -447,6 +507,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
 				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
@@ -497,6 +558,7 @@ describe('follow-redirects ', function () {
 				req.on('error', reject);
 			}))
 			.then(asPromise(function (resolve, reject, res) {
+				assert.deepEqual(res.responseUrl, 'http://localhost:3600/a');
 				res.pipe(concat({encoding: 'string'}, resolve)).on('error', reject);
 			}))
 			.then(function (str) {
