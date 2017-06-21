@@ -193,7 +193,7 @@ RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 };
 
 // Writes buffered data to the current native request
-RedirectableRequest.prototype._write = function (data, encoding, callback) {
+RedirectableRequest.prototype.write = function (data, encoding, callback) {
 	this._currentRequest.write(data, encoding, callback);
 	this._bufferedWrites.push({data: data, encoding: encoding});
 };
