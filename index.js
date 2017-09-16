@@ -19,7 +19,9 @@ var safeMethods = {GET: true, HEAD: true, OPTIONS: true, TRACE: true};
 var eventHandlers = Object.create(null);
 ['abort', 'aborted', 'error', 'socket'].forEach(function (event) {
 	eventHandlers[event] = function (arg) {
-		this._redirectable.emit(event, arg);
+		if (this._redirectable) {
+			this._redirectable.emit(event, arg);
+		}
 	};
 });
 
@@ -35,12 +37,6 @@ function RedirectableRequest(options, responseCallback) {
 	if (responseCallback) {
 		this.on('response', responseCallback);
 	}
-
-	// React to responses of native requests
-	var self = this;
-	this._onNativeResponse = function (response) {
-		self._processResponse(response);
-	};
 
 	// Complete the URL object when necessary
 	if (!options.pathname && options.path) {
@@ -105,7 +101,8 @@ RedirectableRequest.prototype._performRequest = function () {
 };
 
 // Processes a response from the current native request
-RedirectableRequest.prototype._processResponse = function (response) {
+RedirectableRequest.prototype._onNativeResponse = function (response) {
+	var self = this._redirectable;
 	// RFC7231§6.4: The 3xx (Redirection) class of status code indicates
 	// that further action needs to be taken by the user agent in order to
 	// fulfill the request. If a Location header field is provided,
@@ -113,12 +110,12 @@ RedirectableRequest.prototype._processResponse = function (response) {
 	// referenced by the Location field value,
 	// even if the specific status code is not understood.
 	var location = response.headers.location;
-	if (location && this._options.followRedirects !== false &&
+	if (location && self._options.followRedirects !== false &&
 			response.statusCode >= 300 && response.statusCode < 400) {
 		// RFC7231§6.4: A client SHOULD detect and intervene
 		// in cyclical redirections (i.e., "infinite" redirection loops).
-		if (++this._redirectCount > this._options.maxRedirects) {
-			return this.emit('error', new Error('Max redirects exceeded.'));
+		if (++self._redirectCount > self._options.maxRedirects) {
+			return self.emit('error', new Error('Max redirects exceeded.'));
 		}
 
 		// RFC7231§6.4: Automatic redirection needs to done with
@@ -129,11 +126,11 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		// and the user agent MUST NOT change the request method
 		// if it performs an automatic redirection to that URI.
 		var header;
-		var headers = this._options.headers;
-		if (response.statusCode !== 307 && !(this._options.method in safeMethods)) {
-			this._options.method = 'GET';
+		var headers = self._options.headers;
+		if (response.statusCode !== 307 && !(self._options.method in safeMethods)) {
+			self._options.method = 'GET';
 			// Drop a possible entity and headers related to it
-			this._bufferedWrites = [];
+			self._bufferedWrites = [];
 			for (header in headers) {
 				if (/^content-/i.test(header)) {
 					delete headers[header];
@@ -142,7 +139,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		}
 
 		// Drop the Host header, as the redirect might lead to a different host
-		if (!this._isRedirect) {
+		if (!self._isRedirect) {
 			for (header in headers) {
 				if (/^host$/i.test(header)) {
 					delete headers[header];
@@ -151,19 +148,21 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		}
 
 		// Perform the redirected request
-		var redirectUrl = url.resolve(this._currentUrl, location);
+		var redirectUrl = url.resolve(self._currentUrl, location);
 		debug('redirecting to', redirectUrl);
-		Object.assign(this._options, url.parse(redirectUrl));
-		this._isRedirect = true;
-		this._performRequest();
+		Object.assign(self._options, url.parse(redirectUrl));
+		self._isRedirect = true;
+		self._performRequest();
+
+		this._redirectable = null;
 	} else {
 		// The response is not a redirect; return it as-is
-		response.responseUrl = this._currentUrl;
-		this.emit('response', response);
+		response.responseUrl = self._currentUrl;
+		self.emit('response', response);
 
 		// Clean up
-		delete this._options;
-		delete this._bufferedWrites;
+		delete self._options;
+		delete self._bufferedWrites;
 	}
 };
 
