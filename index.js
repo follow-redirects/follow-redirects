@@ -30,6 +30,7 @@ function RedirectableRequest(options, responseCallback) {
 	this._options = options;
 	this._redirectCount = 0;
 	this._bufferedWrites = [];
+	this._isRedirect = false;
 
 	// Attach a callback if passed
 	if (responseCallback) {
