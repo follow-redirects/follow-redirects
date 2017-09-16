@@ -162,8 +162,8 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		this.emit('response', response);
 
 		// Clean up
-		delete this._options;
-		delete this._bufferedWrites;
+		this._options = null;
+		this._bufferedWrites = null;
 	}
 };
 
