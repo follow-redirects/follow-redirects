@@ -42,7 +42,7 @@
     "https.js"
   ],
   "dependencies": {
-    "debug": "^2.4.5"
+    "debug": "^2.6.9"
   },
   "devDependencies": {
     "bluebird": "^3.4.0",
