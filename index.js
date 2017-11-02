@@ -130,7 +130,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 		// if it performs an automatic redirection to that URI.
 		var header;
 		var headers = this._options.headers;
-		if (response.statusCode !== 307 && !(this._options.method.toUpperCase() in safeMethods)) {
+		if (response.statusCode !== 307 && this._options.method && !(this._options.method.toUpperCase() in safeMethods)) {
 			this._options.method = 'GET';
 			// Drop a possible entity and headers related to it
 			this._bufferedWrites = [];
