@@ -17,7 +17,7 @@ var safeMethods = {GET: true, HEAD: true, OPTIONS: true, TRACE: true};
 
 // Create handlers that pass events from native requests
 var eventHandlers = Object.create(null);
-['abort', 'aborted', 'error', 'socket'].forEach(function (event) {
+['abort', 'aborted', 'error', 'socket', 'timeout'].forEach(function (event) {
 	eventHandlers[event] = function (arg) {
 		this._redirectable.emit(event, arg);
 	};
