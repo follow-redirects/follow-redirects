@@ -5,7 +5,6 @@ Drop-in replacement for Nodes `http` and `https` that automatically follows redi
 [![npm version](https://badge.fury.io/js/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
 [![Build Status](https://travis-ci.org/olalonde/follow-redirects.svg?branch=master)](https://travis-ci.org/olalonde/follow-redirects)
 [![Coverage Status](https://coveralls.io/repos/olalonde/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/olalonde/follow-redirects?branch=master)
-[![Code Climate](https://codeclimate.com/github/olalonde/follow-redirects/badges/gpa.svg)](https://codeclimate.com/github/olalonde/follow-redirects)
 [![Dependency Status](https://david-dm.org/olalonde/follow-redirects.svg)](https://david-dm.org/olalonde/follow-redirects)
 [![devDependency Status](https://david-dm.org/olalonde/follow-redirects/dev-status.svg)](https://david-dm.org/olalonde/follow-redirects#info=devDependencies)
 
