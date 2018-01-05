@@ -80,6 +80,22 @@ the following per-request options are supported:
 - `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
 
 
+### Advanced usage
+By default, `follow-redirects` will use the Node.js default implementations
+of [`http`](https://nodejs.org/api/http.html)
+and [`https`](https://nodejs.org/api/https.html).
+To enable features such as caching and/or intermediate request tracking,
+you might instead want to wrap `follow-redirects` around custom protocol implementations:
+
+```javascript
+var followRedirects = require('follow-redirects').wrap({
+  http: require('your-custom-http'),
+  https: require('your-custom-https'),
+});
+```
+
+Such custom protocols only need an implementation of the `request` method.
+
 ## Browserify Usage
 
 Due to the way `XMLHttpRequest` works, the `browserify` versions of `http` and `https` already follow redirects.
