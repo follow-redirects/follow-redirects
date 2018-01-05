@@ -61,10 +61,5 @@
       "lcov",
       "text"
     ]
-  },
-  "xo": {
-    "envs": [
-      "mocha"
-    ]
   }
 }
