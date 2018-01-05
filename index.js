@@ -9,6 +9,7 @@ var nativeProtocols = { "http:": http, "https:": https };
 var schemes = {};
 var exports = module.exports = {
   maxRedirects: 21,
+  maxBodyLength: 10 * 1024 * 1024,
 };
 // RFC7231§4.2.1: Of the request methods defined by this specification,
 // the GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.
@@ -28,7 +29,8 @@ function RedirectableRequest(options, responseCallback) {
   Writable.call(this);
   this._options = options;
   this._redirectCount = 0;
-  this._bufferedWrites = [];
+  this._requestBodyLength = 0;
+  this._requestBodyBuffers = [];
 
   // Attach a callback if passed
   if (responseCallback) {
@@ -85,24 +87,17 @@ RedirectableRequest.prototype._performRequest = function () {
   // End a redirected request
   // (The first request must be ended explicitly with RedirectableRequest#end)
   if (this._isRedirect) {
-    // If the request doesn't have en entity, end directly.
-    var bufferedWrites = this._bufferedWrites;
-    if (bufferedWrites.length === 0) {
-      request.end();
-    // Otherwise, write the request entity and end afterwards.
-    }
-    else {
-      var i = 0;
-      (function writeNext() {
-        if (i < bufferedWrites.length) {
-          var bufferedWrite = bufferedWrites[i++];
-          request.write(bufferedWrite.data, bufferedWrite.encoding, writeNext);
-        }
-        else {
-          request.end();
-        }
-      }());
-    }
+    // Write the request entity and end.
+    var requestBodyBuffers = this._requestBodyBuffers;
+    (function writeNext() {
+      if (requestBodyBuffers.length !== 0) {
+        var buffer = requestBodyBuffers.pop();
+        request.write(buffer.data, buffer.encoding, writeNext);
+      }
+      else {
+        request.end();
+      }
+    }());
   }
 };
 
@@ -136,7 +131,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     if (response.statusCode !== 307 && !(this._options.method in safeMethods)) {
       this._options.method = "GET";
       // Drop a possible entity and headers related to it
-      this._bufferedWrites = [];
+      this._requestBodyBuffers = [];
       for (header in headers) {
         if (/^content-/i.test(header)) {
           delete headers[header];
@@ -167,7 +162,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 
     // Clean up
     delete this._options;
-    delete this._bufferedWrites;
+    delete this._requestBodyBuffers;
   }
 };
 
@@ -198,15 +193,27 @@ RedirectableRequest.prototype.setTimeout = function (timeout, callback) {
 
 // Writes buffered data to the current native request
 RedirectableRequest.prototype.write = function (data, encoding, callback) {
-  this._currentRequest.write(data, encoding, callback);
-  this._bufferedWrites.push({ data: data, encoding: encoding });
+  if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
+    this._requestBodyLength += data.length;
+    this._requestBodyBuffers.push({ data: data, encoding: encoding });
+    this._currentRequest.write(data, encoding, callback);
+  }
+  else {
+    this.emit("error", new Error("Request body larger than maxBodyLength limit"));
+    this.abort();
+  }
 };
 
 // Ends the current native request
 RedirectableRequest.prototype.end = function (data, encoding, callback) {
-  this._currentRequest.end(data, encoding, callback);
-  if (data) {
-    this._bufferedWrites.push({ data: data, encoding: encoding });
+  var currentRequest = this._currentRequest;
+  if (!data) {
+    currentRequest.end(null, null, callback);
+  }
+  else {
+    this.write(data, encoding, function () {
+      currentRequest.end(null, null, callback);
+    });
   }
 };
 
@@ -221,11 +228,13 @@ Object.keys(nativeProtocols).forEach(function (protocol) {
     if (typeof options === "string") {
       options = url.parse(options);
       options.maxRedirects = exports.maxRedirects;
+      options.maxBodyLength = exports.maxBodyLength;
     }
     else {
       options = Object.assign({
-        maxRedirects: exports.maxRedirects,
         protocol: protocol,
+        maxRedirects: exports.maxRedirects,
+        maxBodyLength: exports.maxBodyLength,
       }, options);
     }
     assert.equal(options.protocol, protocol, "protocol mismatch");

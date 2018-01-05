@@ -31,15 +31,18 @@ describe("follow-redirects ", function () {
   var app;
   var app2;
   var originalMaxRedirects;
+  var originalMaxBodyLength;
 
   beforeEach(function () {
     originalMaxRedirects = followRedirects.maxRedirects;
+    originalMaxBodyLength = followRedirects.maxBodyLength;
     app = express();
     app2 = express();
   });
 
   afterEach(function (done) {
     followRedirects.maxRedirects = originalMaxRedirects;
+    followRedirects.maxBodyLength = originalMaxBodyLength;
     server.stop().nodeify(done);
   });
 
@@ -588,6 +591,96 @@ describe("follow-redirects ", function () {
         assert.equal(str, fs.readFileSync(__filename, "utf8"));
       })
       .nodeify(done);
+  });
+
+  describe("should obey a `maxBodyLength` property", function () {
+    it("which defaults to 10MB", function () {
+      assert.equal(followRedirects.maxBodyLength, 10 * 1024 * 1024);
+    });
+
+    it("set globally, on write", function (done) {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      followRedirects.maxBodyLength = 8;
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, reject);
+          req.write("12345678");
+          req.on("error", resolve);
+          req.write("9");
+        }))
+        .then(function (error) {
+          assert.equal(error.message, "Request body larger than maxBodyLength limit");
+        })
+        .nodeify(done);
+    });
+
+    it("set per request, on write", function (done) {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+      opts.maxBodyLength = 8;
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, reject);
+          req.write("12345678");
+          req.on("error", resolve);
+          req.write("9");
+        }))
+        .then(function (error) {
+          assert.equal(error.message, "Request body larger than maxBodyLength limit");
+        })
+        .nodeify(done);
+    });
+
+    it("set globally, on end", function (done) {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      followRedirects.maxBodyLength = 8;
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, reject);
+          req.write("12345678");
+          req.on("error", resolve);
+          req.end("9");
+        }))
+        .then(function (error) {
+          assert.equal(error.message, "Request body larger than maxBodyLength limit");
+        })
+        .nodeify(done);
+    });
+
+    it("set per request, on end", function (done) {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+      opts.maxBodyLength = 8;
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, reject);
+          req.write("12345678");
+          req.on("error", resolve);
+          req.end("9");
+        }))
+        .then(function (error) {
+          assert.equal(error.message, "Request body larger than maxBodyLength limit");
+        })
+        .nodeify(done);
+    });
   });
 
   describe("should drop the entity and associated headers", function () {
