@@ -7,7 +7,9 @@
     "node": ">=4.0"
   },
   "scripts": {
-    "test": "xo && BLUEBIRD_DEBUG=1 nyc mocha"
+    "test": "npm run lint && npm run mocha",
+    "lint": "eslint *.js test",
+    "mocha": "nyc mocha"
   },
   "repository": {
     "type": "git",
@@ -42,7 +44,8 @@
     "https.js"
   ],
   "dependencies": {
-    "debug": "^3.1.0"
+    "debug": "^3.1.0",
+    "eslint": "^4.14.0"
   },
   "devDependencies": {
     "bluebird": "^3.4.0",
@@ -50,8 +53,7 @@
     "coveralls": "^3.0.0",
     "express": "^4.13.0",
     "mocha": "^4.0.1",
-    "nyc": "^11.3.0",
-    "xo": "^0.17.1"
+    "nyc": "^11.3.0"
   },
   "license": "MIT",
   "nyc": {

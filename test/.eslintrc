@@ -1,0 +1,16 @@
+{
+  globals: {
+    describe: true,
+    it: true,
+    before: true,
+    after: true,
+    beforeEach: true,
+    afterEach: true,
+    expect: true,
+  },
+
+  rules: {
+    no-sync: "off", // allow sync methods
+    max-nested-callbacks: "off", // Mocha works with deeply nested callbacks
+  },
+}

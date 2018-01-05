@@ -1,1 +1,1 @@
-module.exports = require('./').http;
+module.exports = require("./").http;

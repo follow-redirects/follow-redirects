@@ -1,1 +1,1 @@
-module.exports = require('./').https;
+module.exports = require("./").https;
