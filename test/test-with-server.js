@@ -261,7 +261,6 @@ describe("follow-redirects ", function () {
       .then(asPromise(function (resolve, reject) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.flushHeaders();
-        request.on("response", resolve);
         request.on("error", reject);
       }))
       .nodeify(done);
@@ -322,7 +321,6 @@ describe("follow-redirects ", function () {
       .then(asPromise(function (resolve, reject) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.setNoDelay(true);
-        request.on("response", resolve);
         request.on("error", reject);
       }))
       .nodeify(done);
