@@ -173,6 +173,21 @@ RedirectableRequest.prototype.flushHeaders = function () {
   this._currentRequest.flushHeaders();
 };
 
+// Gets a header value of the current native request
+RedirectableRequest.prototype.getHeader = function (name) {
+  return this._currentRequest.getHeader(name);
+};
+
+// Clears a header value of the current native request
+RedirectableRequest.prototype.removeHeader = function (name) {
+  return this._currentRequest.removeHeader(name);
+};
+
+// Sets a header value of the current native request
+RedirectableRequest.prototype.setHeader = function (name, value) {
+  this._currentRequest.setHeader(name, value);
+};
+
 // Sets the noDelay option of the current native request
 RedirectableRequest.prototype.setNoDelay = function (noDelay) {
   this._currentRequest.setNoDelay(noDelay);

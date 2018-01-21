@@ -267,6 +267,53 @@ describe("follow-redirects ", function () {
       .nodeify(done);
   });
 
+  it("should provide getHeader", function () {
+    var req = http.request("http://localhost:3600/a");
+    req.setHeader("my-header", "my value");
+    assert.equal(req.getHeader("my-header"), "my value");
+    req.abort();
+  });
+
+  it("should provide removeHeader", function (done) {
+    app.get("/a", function (req, res) {
+      res.end(JSON.stringify(req.headers));
+    });
+
+    server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        var req = http.request("http://localhost:3600/a", concatJson(resolve, reject));
+        req.setHeader("my-header", "my value");
+        assert.equal(req.getHeader("my-header"), "my value");
+        req.removeHeader("my-header");
+        assert.equal(req.getHeader("my-header"), undefined);
+        req.end();
+      }))
+      .then(function (res) {
+        var headers = res.parsedJson;
+        assert.equal(headers["my-header"], undefined);
+      })
+      .nodeify(done);
+  });
+
+  it("should provide setHeader", function (done) {
+    app.get("/a", function (req, res) {
+      res.end(JSON.stringify(req.headers));
+    });
+
+    server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        var req = http.request("http://localhost:3600/a", concatJson(resolve, reject));
+        req.setHeader("my-header", "my value");
+        assert.equal(req.getHeader("my-header"), "my value");
+        req.end();
+      }))
+      .then(function (res) {
+        var headers = res.parsedJson;
+        assert.equal(headers["my-header"], "my value");
+      })
+      .nodeify(done);
+  });
+
   it("should provide setNoDelay", function (done) {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", sendsJson({ foo: "bar" }));
