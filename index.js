@@ -90,6 +90,13 @@ RedirectableRequest.prototype.end = function (data, encoding, callback) {
   };
 });
 
+// Proxy all public ClientRequest properties
+["aborted", "connection", "socket"].forEach(function (property) {
+  Object.defineProperty(RedirectableRequest.prototype, property, {
+    get() { return this._currentRequest[property]; },
+  });
+});
+
 // Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
   // Load the native protocol

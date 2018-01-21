@@ -232,25 +232,42 @@ describe("follow-redirects ", function () {
 
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
-    app.get("/c", callAbort);
+    app.get("/c", function () {
+      request.abort();
+    });
 
     server.start(app)
       .then(asPromise(function (resolve, reject) {
+        var currentTime = Date.now();
         request = http.get("http://localhost:3600/a", resolve);
+        assert.equal(typeof request.aborted, "undefined");
         request.on("response", reject);
         request.on("error", reject);
         request.on("abort", onAbort);
         function onAbort() {
+          assert.equal(typeof request.aborted, "number");
+          assert(request.aborted > currentTime);
           request.removeListener("error", reject);
           request.on("error", noop);
           resolve();
         }
       }))
       .nodeify(done);
+  });
 
-    function callAbort() {
-      request.abort();
-    }
+  it("should provide connection", function (done) {
+    var request;
+
+    app.get("/a", sendsJson({}));
+
+    server.start(app)
+      .then(asPromise(function (resolve) {
+        request = http.get("http://localhost:3600/a", resolve);
+      }))
+      .then(function () {
+        assert(request.connection instanceof net.Socket);
+      })
+      .nodeify(done);
   });
 
   it("should provide flushHeaders", function (done) {
@@ -347,6 +364,21 @@ describe("follow-redirects ", function () {
         var request = http.get("http://localhost:3600/a", resolve);
         request.setTimeout(1000);
       }))
+      .nodeify(done);
+  });
+
+  it("should provide socket", function (done) {
+    var request;
+
+    app.get("/a", sendsJson({}));
+
+    server.start(app)
+      .then(asPromise(function (resolve) {
+        request = http.get("http://localhost:3600/a", resolve);
+      }))
+      .then(function () {
+        assert(request.socket instanceof net.Socket);
+      })
       .nodeify(done);
   });
 
