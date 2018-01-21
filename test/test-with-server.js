@@ -291,7 +291,8 @@ describe("follow-redirects ", function () {
   });
 
   it("should provide removeHeader", function (done) {
-    app.get("/a", function (req, res) {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", function (req, res) {
       res.end(JSON.stringify(req.headers));
     });
 
@@ -312,7 +313,8 @@ describe("follow-redirects ", function () {
   });
 
   it("should provide setHeader", function (done) {
-    app.get("/a", function (req, res) {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", function (req, res) {
       res.end(JSON.stringify(req.headers));
     });
 

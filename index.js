@@ -21,6 +21,7 @@ var eventHandlers = Object.create(null);
 function RedirectableRequest(options, responseCallback) {
   // Initialize the request
   Writable.call(this);
+  options.headers = options.headers || {};
   this._options = options;
   this._redirectCount = 0;
   this._requestBodyLength = 0;
@@ -80,9 +81,21 @@ RedirectableRequest.prototype.end = function (data, encoding, callback) {
   }
 };
 
+// Sets a header value on the current native request
+RedirectableRequest.prototype.setHeader = function (name, value) {
+  this._options.headers[name] = value;
+  this._currentRequest.setHeader(name, value);
+};
+
+// Clears a header value on the current native request
+RedirectableRequest.prototype.removeHeader = function (name) {
+  delete this._options.headers[name];
+  this._currentRequest.removeHeader(name);
+};
+
 // Proxy all other public ClientRequest methods
 [
-  "abort", "flushHeaders", "getHeader", "removeHeader", "setHeader",
+  "abort", "flushHeaders", "getHeader",
   "setNoDelay", "setSocketKeepAlive", "setTimeout",
 ].forEach(function (method) {
   RedirectableRequest.prototype[method] = function (a, b) {
@@ -201,8 +214,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     this.emit("response", response);
 
     // Clean up
-    delete this._options;
-    delete this._requestBodyBuffers;
+    this._requestBodyBuffers = [];
   }
 };
 
