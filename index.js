@@ -106,7 +106,7 @@ RedirectableRequest.prototype.removeHeader = function (name) {
 // Proxy all public ClientRequest properties
 ["aborted", "connection", "socket"].forEach(function (property) {
   Object.defineProperty(RedirectableRequest.prototype, property, {
-    get() { return this._currentRequest[property]; },
+    get: function () { return this._currentRequest[property]; },
   });
 });
 
