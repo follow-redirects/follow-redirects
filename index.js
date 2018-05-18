@@ -160,6 +160,15 @@ RedirectableRequest.prototype._performRequest = function () {
 
 // Processes a response from the current native request
 RedirectableRequest.prototype._processResponse = function (response) {
+  // Store the redirected response
+  if (this._options.trackRedirects) {
+    this._redirects.push({
+      url: this._currentUrl,
+      headers: response.headers,
+      statusCode: response.statusCode,
+    });
+  }
+
   // RFC7231§6.4: The 3xx (Redirection) class of status code indicates
   // that further action needs to be taken by the user agent in order to
   // fulfill the request. If a Location header field is provided,
@@ -167,7 +176,6 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // referenced by the Location field value,
   // even if the specific status code is not understood.
   var location = response.headers.location;
-  this._redirects.push(this._currentUrl);
   if (location && this._options.followRedirects !== false &&
       response.statusCode >= 300 && response.statusCode < 400) {
     // RFC7231§6.4: A client SHOULD detect and intervene
