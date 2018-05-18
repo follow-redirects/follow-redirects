@@ -24,6 +24,7 @@ function RedirectableRequest(options, responseCallback) {
   options.headers = options.headers || {};
   this._options = options;
   this._redirectCount = 0;
+  this._redirects = [];
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
 
@@ -166,6 +167,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // referenced by the Location field value,
   // even if the specific status code is not understood.
   var location = response.headers.location;
+  this._redirects.push(this._currentUrl);
   if (location && this._options.followRedirects !== false &&
       response.statusCode >= 300 && response.statusCode < 400) {
     // RFC7231§6.4: A client SHOULD detect and intervene
@@ -214,6 +216,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   else {
     // The response is not a redirect; return it as-is
     response.responseUrl = this._currentUrl;
+    response.redirects = this._redirects;
     this.emit("response", response);
 
     // Clean up
