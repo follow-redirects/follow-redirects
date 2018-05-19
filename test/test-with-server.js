@@ -762,6 +762,21 @@ describe("follow-redirects ", function () {
     });
   });
 
+  describe("writing invalid data", function () {
+    it("throws an error", function () {
+      var req = http.request("http://example.org/");
+      var error = null;
+      try {
+        req.write(12345678);
+      }
+      catch (e) {
+        error = e;
+      }
+      req.abort();
+      assert.equal(error.message, "data should be a string, Buffer or Uint8Array");
+    });
+  });
+
   describe("should drop the entity and associated headers", function () {
     function itDropsBodyAndHeaders(originalMethod) {
       it("when switching from " + originalMethod + " to GET", function (done) {
