@@ -441,6 +441,57 @@ describe("follow-redirects ", function () {
     });
   });
 
+  describe("the trackRedirects option", function () {
+    beforeEach(function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", sendsJson({}));
+    });
+
+    describe("when not set", function () {
+      it("should not track redirects", function (done) {
+        server.start(app)
+          .then(asPromise(function (resolve, reject) {
+            var opts = url.parse("http://localhost:3600/a");
+            http.get(opts, concatJson(resolve, reject)).on("error", reject);
+          }))
+          .then(function (res) {
+            var redirects = res.redirects;
+            assert.equal(redirects.length, 0);
+          })
+          .nodeify(done);
+      });
+    });
+
+    describe("when set to true", function () {
+      it("should track redirects", function (done) {
+        server.start(app)
+          .then(asPromise(function (resolve, reject) {
+            var opts = url.parse("http://localhost:3600/a");
+            opts.trackRedirects = true;
+            http.get(opts, concatJson(resolve, reject)).on("error", reject);
+          }))
+          .then(function (res) {
+            var redirects = res.redirects;
+            assert.equal(redirects.length, 3);
+
+            assert.equal(redirects[0].url, "http://localhost:3600/a");
+            assert.equal(redirects[0].statusCode, 302);
+            assert.equal(redirects[0].headers["content-type"], "text/plain; charset=utf-8");
+
+            assert.equal(redirects[1].url, "http://localhost:3600/b");
+            assert.equal(redirects[1].statusCode, 302);
+            assert.equal(redirects[1].headers["content-type"], "text/plain; charset=utf-8");
+
+            assert.equal(redirects[2].url, "http://localhost:3600/c");
+            assert.equal(redirects[2].statusCode, 200);
+            assert.equal(redirects[2].headers["content-type"], "application/json; charset=utf-8");
+          })
+          .nodeify(done);
+      });
+    });
+  });
+
   describe("should switch to safe methods when appropriate", function () {
     function mustUseSameMethod(statusCode, useSameMethod) {
       describe("when redirecting with status code " + statusCode, function () {
