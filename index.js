@@ -24,6 +24,7 @@ function RedirectableRequest(options, responseCallback) {
   options.headers = options.headers || {};
   this._options = options;
   this._redirectCount = 0;
+  this._redirects = [];
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
 
@@ -159,6 +160,15 @@ RedirectableRequest.prototype._performRequest = function () {
 
 // Processes a response from the current native request
 RedirectableRequest.prototype._processResponse = function (response) {
+  // Store the redirected response
+  if (this._options.trackRedirects) {
+    this._redirects.push({
+      url: this._currentUrl,
+      headers: response.headers,
+      statusCode: response.statusCode,
+    });
+  }
+
   // RFC7231§6.4: The 3xx (Redirection) class of status code indicates
   // that further action needs to be taken by the user agent in order to
   // fulfill the request. If a Location header field is provided,
@@ -214,6 +224,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   else {
     // The response is not a redirect; return it as-is
     response.responseUrl = this._currentUrl;
+    response.redirects = this._redirects;
     this.emit("response", response);
 
     // Clean up
