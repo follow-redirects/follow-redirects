@@ -176,6 +176,13 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // referenced by the Location field value,
   // even if the specific status code is not understood.
   var location = response.headers.location;
+  if (this._options.trackRedirects === true) {
+    this._redirects.push({
+      "url": this._currentUrl,
+      "headers": response.headers,
+      "statusCode": response.statusCode
+    });
+  }
   if (location && this._options.followRedirects !== false &&
       response.statusCode >= 300 && response.statusCode < 400) {
     // RFC7231§6.4: A client SHOULD detect and intervene

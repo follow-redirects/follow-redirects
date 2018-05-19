@@ -73,6 +73,8 @@ In addition to the [standard HTTP](https://nodejs.org/api/http.html#http_http_re
 the following per-request options are supported:
 - `followRedirects` (default: `true`) – whether redirects should be followed.
 
+- `trackRedirects` (default: `false`) – whether to track redirects to a array.
+
 - `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
 
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
