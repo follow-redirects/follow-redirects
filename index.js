@@ -220,6 +220,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
     Object.assign(this._options, url.parse(redirectUrl));
     this._isRedirect = true;
     this._performRequest();
+
+    // Void the remaining response
+    // This also avoid memory leaks and hanging applications if the final response is destroyed prematurely
+    response.destroy();
   }
   else {
     // The response is not a redirect; return it as-is
