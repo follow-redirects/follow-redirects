@@ -210,6 +210,32 @@ describe("follow-redirects ", function () {
       .nodeify(done);
   });
 
+  it("should destroy responses", function (done) {
+    app.get("/a", hangingRedirectTo("/b"));
+    app.get("/b", hangingRedirectTo("/c"));
+    app.get("/c", hangingRedirectTo("/d"));
+    app.get("/d", hangingRedirectTo("/e"));
+    app.get("/e", hangingRedirectTo("/f"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    function hangingRedirectTo(destination) {
+      return function (req, res) {
+        res.writeHead(301, { location: destination });
+        res.write(new Array(128).join(" "));
+      };
+    }
+
+    server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
+      })
+      .nodeify(done);
+  });
+
   it("should honor query params in redirects", function (done) {
     app.get("/a", redirectsTo("/b?greeting=hello"));
     app.get("/b", function (req, res) {
