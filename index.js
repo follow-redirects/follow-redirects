@@ -61,7 +61,10 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
   if (!(typeof data === "string" || typeof data === "object" && ("length" in data))) {
     throw new Error("data should be a string, Buffer or Uint8Array");
   }
-  if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
+  if(data instanceof Buffer && data.length === 0) {
+    callback();
+  }
+  else if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
     this._requestBodyLength += data.length;
     this._requestBodyBuffers.push({ data: data, encoding: encoding });
     this._currentRequest.write(data, encoding, callback);
