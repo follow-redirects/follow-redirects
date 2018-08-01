@@ -974,6 +974,45 @@ describe("follow-redirects ", function () {
         .nodeify(done);
     });
   });
+  describe("should not hang on empty writes", function () {
+    it("when data is the empty string", function (done) {
+      app.post("/a", sendsJson({ foo: "bar" }));
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, resolve);
+          req.end("");
+          req.on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .nodeify(done);
+    });
+
+    it("when data is Buffer.from('')", function (done) {
+      app.post("/a", sendsJson({ foo: "bar" }));
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, resolve);
+          req.end(Buffer.from(""));
+          req.on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .nodeify(done);
+    });
+  });
 });
 
 function noop() { /* noop */ }
