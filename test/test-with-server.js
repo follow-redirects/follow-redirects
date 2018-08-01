@@ -974,6 +974,27 @@ describe("follow-redirects ", function () {
         .nodeify(done);
     });
   });
+  describe("should support empty buffers", function () {
+    it("when request data === Buffer.from('')", function (done) {
+      app.post("/a", sendsJson({ foo: "bar" }));
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, resolve);
+          req.end(Buffer.from(""));
+          req.on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+          // assert.deepEqual(res.parsedJson, { foo: "bar" });
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .nodeify(done);
+    });
+  });
 });
 
 function noop() { /* noop */ }

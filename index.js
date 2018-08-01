@@ -61,8 +61,8 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
   if (!(typeof data === "string" || typeof data === "object" && ("length" in data))) {
     throw new Error("data should be a string, Buffer or Uint8Array");
   }
-  if(data instanceof Buffer && data.length === 0) {
-    callback();
+  if (data instanceof Buffer && data.length === 0) {
+    return callback();
   }
   else if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
     this._requestBodyLength += data.length;
@@ -73,6 +73,7 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
     this.emit("error", new Error("Request body larger than maxBodyLength limit"));
     this.abort();
   }
+  return callback;
 };
 
 // Ends the current native request
