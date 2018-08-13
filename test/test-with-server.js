@@ -627,7 +627,9 @@ describe("follow-redirects ", function () {
 
   it("should support writing into request stream with redirects", function (done) {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
-    app.post("/b", function (req, res) {
+    app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
+    app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
+    app.post("/d", function (req, res) {
       req.pipe(res);
     });
 
@@ -675,7 +677,9 @@ describe("follow-redirects ", function () {
 
   it("should support piping into request stream with redirects", function (done) {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
-    app.post("/b", function (req, res) {
+    app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
+    app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
+    app.post("/d", function (req, res) {
       req.pipe(res);
     });
 
@@ -726,7 +730,9 @@ describe("follow-redirects ", function () {
 
   it("should support piping into request stream with explicit Content-Length with redirects", function (done) {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
-    app.post("/b", function (req, res) {
+    app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
+    app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
+    app.post("/d", function (req, res) {
       req.pipe(res);
     });
 

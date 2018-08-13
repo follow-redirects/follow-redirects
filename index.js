@@ -155,10 +155,11 @@ RedirectableRequest.prototype._performRequest = function () {
   // (The first request must be ended explicitly with RedirectableRequest#end)
   if (this._isRedirect) {
     // Write the request entity and end.
-    var requestBodyBuffers = this._requestBodyBuffers;
+    var i = 0;
+    var buffers = this._requestBodyBuffers;
     (function writeNext() {
-      if (requestBodyBuffers.length !== 0) {
-        var buffer = requestBodyBuffers.shift();
+      if (i < buffers.length) {
+        var buffer = buffers[i++];
         request.write(buffer.data, buffer.encoding, writeNext);
       }
       else {
