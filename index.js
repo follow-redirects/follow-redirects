@@ -64,7 +64,9 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
   // Ignore empty buffers, since writing them doesn't invoke the callback
   // https://github.com/nodejs/node/issues/22066
   if (data.length === 0) {
-    callback();
+    if (callback) {
+      callback();
+    }
     return;
   }
   // Only write when we don't exceed the maximum body length

@@ -984,6 +984,7 @@ describe("follow-redirects ", function () {
       server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
+          req.write("");
           req.end("");
           req.on("error", reject);
         }))
@@ -1003,6 +1004,7 @@ describe("follow-redirects ", function () {
       server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
+          req.write(Buffer.from(""));
           req.end(Buffer.from(""));
           req.on("error", reject);
         }))

@@ -95,7 +95,7 @@
     no-use-before-define: ["error", { "functions": false }],
 
     // Node.js
-    callback-return: "error",
+    callback-return: "off",
     global-require: "error",
     handle-callback-err: "error",
     no-buffer-constructor: "error",
