@@ -17,6 +17,8 @@ var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
 
+var testFile = path.resolve(__dirname, "input.txt");
+
 describe("follow-redirects ", function () {
   function httpsOptions(app) {
     return {
@@ -610,7 +612,7 @@ describe("follow-redirects ", function () {
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        req.end(fs.readFileSync(__filename), "buffer");
+        req.end(fs.readFileSync(testFile), "buffer");
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
@@ -618,7 +620,7 @@ describe("follow-redirects ", function () {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -635,14 +637,14 @@ describe("follow-redirects ", function () {
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        req.end(fs.readFileSync(__filename), "buffer");
+        req.end(fs.readFileSync(testFile), "buffer");
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -658,7 +660,7 @@ describe("follow-redirects ", function () {
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        fs.createReadStream(__filename).pipe(req);
+        fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
@@ -666,7 +668,7 @@ describe("follow-redirects ", function () {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -683,14 +685,14 @@ describe("follow-redirects ", function () {
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        fs.createReadStream(__filename).pipe(req);
+        fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -703,13 +705,13 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
     opts.headers = {
-      "Content-Length": fs.readFileSync(__filename).byteLength,
+      "Content-Length": fs.readFileSync(testFile).byteLength,
     };
 
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        fs.createReadStream(__filename).pipe(req);
+        fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
@@ -717,7 +719,7 @@ describe("follow-redirects ", function () {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -731,20 +733,20 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
     opts.headers = {
-      "Content-Length": fs.readFileSync(__filename).byteLength,
+      "Content-Length": fs.readFileSync(testFile).byteLength,
     };
 
     server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
-        fs.createReadStream(__filename).pipe(req);
+        fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
       .then(asPromise(function (resolve, reject, res) {
         res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
       }))
       .then(function (str) {
-        assert.equal(str, fs.readFileSync(__filename, "utf8"));
+        assert.equal(str, fs.readFileSync(testFile, "utf8"));
       })
       .nodeify(done);
   });
@@ -868,13 +870,13 @@ describe("follow-redirects ", function () {
         opts.headers = {
           "other": "value",
           "content-type": "application/javascript",
-          "Content-Length": fs.readFileSync(__filename).byteLength,
+          "Content-Length": fs.readFileSync(testFile).byteLength,
         };
 
         server.start(app)
           .then(asPromise(function (resolve, reject) {
             var req = http.request(opts, resolve);
-            fs.createReadStream(__filename).pipe(req);
+            fs.createReadStream(testFile).pipe(req);
             req.on("error", reject);
           }))
           .then(asPromise(function (resolve, reject, res) {
