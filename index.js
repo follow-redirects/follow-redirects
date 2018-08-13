@@ -158,7 +158,7 @@ RedirectableRequest.prototype._performRequest = function () {
     var requestBodyBuffers = this._requestBodyBuffers;
     (function writeNext() {
       if (requestBodyBuffers.length !== 0) {
-        var buffer = requestBodyBuffers.pop();
+        var buffer = requestBodyBuffers.shift();
         request.write(buffer.data, buffer.encoding, writeNext);
       }
       else {
