@@ -129,6 +129,10 @@ RedirectableRequest.prototype._performRequest = function () {
   // Load the native protocol
   var protocol = this._options.protocol;
   var nativeProtocol = this._options.nativeProtocols[protocol];
+  if (!nativeProtocol) {
+    this.emit("error", new Error("Unsupported protocol " + protocol));
+    return;
+  }
 
   // If specified, use the agent corresponding to the protocol
   // (HTTP and HTTPS use different types of agents)

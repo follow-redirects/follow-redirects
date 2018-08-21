@@ -601,6 +601,24 @@ describe("follow-redirects ", function () {
     });
   });
 
+  describe("should error on an unsupported protocol redirect", function () {
+    it("(http -> about)", function (done) {
+      app.get("/a", redirectsTo("about:blank"));
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get("http://localhost:3600/a")
+            .on("response", done.bind(null, new Error("unexpected response")))
+            .on("error", reject);
+        }))
+        .catch(function (err) {
+          assert(err instanceof Error);
+          assert.equal(err.message, "Unsupported protocol about:");
+        })
+        .nodeify(done);
+    });
+  });
+
   it("should support writing into request stream without redirects", function (done) {
     app.post("/a", function (req, res) {
       req.pipe(res);
