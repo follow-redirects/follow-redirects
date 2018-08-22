@@ -58,9 +58,15 @@ RedirectableRequest.prototype = Object.create(Writable.prototype);
 
 // Writes buffered data to the current native request
 RedirectableRequest.prototype.write = function (data, encoding, callback) {
+  // Validate input and shift parameters if necessary
   if (!(typeof data === "string" || typeof data === "object" && ("length" in data))) {
     throw new Error("data should be a string, Buffer or Uint8Array");
   }
+  if (typeof encoding === "function") {
+    callback = encoding;
+    encoding = null;
+  }
+
   // Ignore empty buffers, since writing them doesn't invoke the callback
   // https://github.com/nodejs/node/issues/22066
   if (data.length === 0) {

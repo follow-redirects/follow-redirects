@@ -1001,7 +1001,7 @@ describe("follow-redirects ", function () {
     });
   });
   describe("should not hang on empty writes", function () {
-    it("when data is the empty string", function (done) {
+    it("when data is the empty string without encoding", function (done) {
       app.post("/a", sendsJson({ foo: "bar" }));
 
       var opts = url.parse("http://localhost:3600/a");
@@ -1011,7 +1011,31 @@ describe("follow-redirects ", function () {
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
           req.write("");
-          req.end("");
+          req.write("", function () {
+            req.end("");
+          });
+          req.on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .nodeify(done);
+    });
+
+    it("when data is the empty string with encoding", function (done) {
+      app.post("/a", sendsJson({ foo: "bar" }));
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+
+      server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, resolve);
+          req.write("");
+          req.write("", "utf8", function () {
+            req.end("", "utf8");
+          });
           req.on("error", reject);
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1031,7 +1055,9 @@ describe("follow-redirects ", function () {
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
           req.write(Buffer.from(""));
-          req.end(Buffer.from(""));
+          req.write(Buffer.from(""), function () {
+            req.end(Buffer.from(""));
+          });
           req.on("error", reject);
         }))
         .then(asPromise(function (resolve, reject, res) {
