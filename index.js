@@ -90,6 +90,16 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
 
 // Ends the current native request
 RedirectableRequest.prototype.end = function (data, encoding, callback) {
+  // Shift parameters if necessary
+  if (typeof data === "function") {
+    callback = data;
+    data = encoding = null;
+  }
+  else if (typeof encoding === "function") {
+    callback = encoding;
+    encoding = null;
+  }
+
   var currentRequest = this._currentRequest;
   if (!data) {
     currentRequest.end(null, null, callback);

@@ -1000,6 +1000,7 @@ describe("follow-redirects ", function () {
         .nodeify(done);
     });
   });
+
   describe("should not hang on empty writes", function () {
     it("when data is the empty string without encoding", function (done) {
       app.post("/a", sendsJson({ foo: "bar" }));
@@ -1065,6 +1066,125 @@ describe("follow-redirects ", function () {
           res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
         }))
         .nodeify(done);
+    });
+  });
+
+  describe("end accepts as arguments", function () {
+    var opts = url.parse("http://localhost:3600/a");
+    opts.method = "POST";
+
+    var called;
+    function setCalled() {
+      called = true;
+    }
+
+    beforeEach(function () {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      called = false;
+    });
+
+
+    it("(none)", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end();
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "");
+        });
+    });
+
+    it("the empty string", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end("");
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "");
+        });
+    });
+
+    it("a non-empty string", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end("abc");
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "abc");
+        });
+    });
+
+    it("a non-empty string and an encoding", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end("abc", "utf8");
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "abc");
+        });
+    });
+
+    it("a non-empty string, an encoding, and a callback", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end("abc", "utf8", setCalled);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "abc");
+          assert.equal(called, true);
+        });
+    });
+
+    it("a non-empty string and a callback", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end("abc", setCalled);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "abc");
+          assert.equal(called, true);
+        });
+    });
+
+    it("a callback", function () {
+      return server.start(app)
+        .then(asPromise(function (resolve) {
+          var req = http.request(opts, resolve);
+          req.end(setCalled);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve));
+        }))
+        .then(function (body) {
+          assert.equal(body, "");
+          assert.equal(called, true);
+        });
     });
   });
 });
