@@ -100,15 +100,11 @@ RedirectableRequest.prototype.end = function (data, encoding, callback) {
     encoding = null;
   }
 
+  // Write data and end
   var currentRequest = this._currentRequest;
-  if (!data) {
+  this.write(data || "", encoding, function () {
     currentRequest.end(null, null, callback);
-  }
-  else {
-    this.write(data, encoding, function () {
-      currentRequest.end(null, null, callback);
-    });
-  }
+  });
 };
 
 // Sets a header value on the current native request
