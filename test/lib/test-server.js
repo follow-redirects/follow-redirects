@@ -3,7 +3,6 @@
 var http = require("http");
 var https = require("https");
 var assert = require("assert");
-var BPromise = require("bluebird");
 
 module.exports = function (defaultPorts) {
   // set default ports for each protocol i.e. {http: 80, https: 443}
@@ -24,7 +23,7 @@ module.exports = function (defaultPorts) {
    * @returns {Promise} that resolves when the server successfully started
    */
   function start(options) {
-    return BPromise.fromNode(function (callback) {
+    return new Promise(function (resolve, reject) {
       if (typeof options === "function") {
         options = { app: options };
       }
@@ -42,7 +41,12 @@ module.exports = function (defaultPorts) {
       }
       assert(typeof port, "number", "port");
       servers.push(server);
-      server.listen(port, callback);
+      server.listen(port, function (err) {
+        if (err) {
+          return reject(err);
+        }
+        return resolve();
+      });
     });
   }
 
@@ -51,12 +55,21 @@ module.exports = function (defaultPorts) {
    * @returns {Promise} that resolves when all servers have successfully shut down.
    */
   function stop() {
-    return BPromise.all(servers.map(stopServer)).finally(clearServers);
+    // the empty .catch() block allows the next .then() to act like a finally()
+    // once Node.js < 8 is dropped, this can be simplified
+    return Promise.all(servers.map(stopServer))
+      .catch(function () { /* do nothing */ })
+      .then(clearServers);
   }
 
   function stopServer(server) {
-    return BPromise.fromNode(function (callback) {
-      server.close(callback);
+    return new Promise(function (resolve, reject) {
+      server.close(function (err) {
+        if (err) {
+          return reject(err);
+        }
+        return resolve();
+      });
     });
   }
 

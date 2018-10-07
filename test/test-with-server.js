@@ -6,7 +6,6 @@ var url = require("url");
 var followRedirects = require("..");
 var http = followRedirects.http;
 var https = followRedirects.https;
-var BPromise = require("bluebird");
 var fs = require("fs");
 var path = require("path");
 
@@ -42,13 +41,13 @@ describe("follow-redirects ", function () {
     app2 = express();
   });
 
-  afterEach(function (done) {
+  afterEach(function () {
     followRedirects.maxRedirects = originalMaxRedirects;
     followRedirects.maxBodyLength = originalMaxBodyLength;
-    server.stop().nodeify(done);
+    return server.stop();
   });
 
-  it("http.get with string and callback - redirect", function (done) {
+  it("http.get with string and callback - redirect", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
     app.get("/c", redirectsTo("/d"));
@@ -56,18 +55,17 @@ describe("follow-redirects ", function () {
     app.get("/e", redirectsTo("/f"));
     app.get("/f", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
       }))
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("http.get with options object and callback - redirect", function (done) {
+  it("http.get with options object and callback - redirect", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
     app.get("/c", redirectsTo("/d"));
@@ -75,7 +73,7 @@ describe("follow-redirects ", function () {
     app.get("/e", redirectsTo("/f"));
     app.get("/f", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var options = {
           hostname: "localhost",
@@ -88,28 +86,26 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("http.get with string and callback - no redirect", function (done) {
+  it("http.get with string and callback - no redirect", function () {
     app.get("/a", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
       }))
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("http.get with options object and callback - no redirect", function (done) {
+  it("http.get with options object and callback - no redirect", function () {
     app.get("/a", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var options = {
           hostname: "localhost",
@@ -122,11 +118,10 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/a?xyz");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("http.get with response event", function (done) {
+  it("http.get with response event", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
     app.get("/c", redirectsTo("/d"));
@@ -134,7 +129,7 @@ describe("follow-redirects ", function () {
     app.get("/e", redirectsTo("/f"));
     app.get("/f", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a")
           .on("response", concatJson(resolve, reject))
@@ -143,16 +138,15 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should return with the original status code if the response does not contain a location header", function (done) {
+  it("should return with the original status code if the response does not contain a location header", function () {
     app.get("/a", function (req, res) {
       res.status(307).end();
     });
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", resolve).on("error", reject);
       }))
@@ -162,27 +156,25 @@ describe("follow-redirects ", function () {
         res.on("data", function () {
           // noop to consume the stream (server won't shut down otherwise).
         });
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should emit connection errors on the returned stream", function (done) {
+  it("should emit connection errors on the returned stream", function () {
     app.get("/a", redirectsTo("http://localhost:36002/b"));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", reject).on("error", resolve);
       }))
       .then(function (error) {
         assert.equal(error.code, "ECONNREFUSED");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should emit socket events on the returned stream", function (done) {
+  it("should emit socket events on the returned stream", function () {
     app.get("/a", sendsJson({ a: "b" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a")
           .on("socket", resolve)
@@ -190,11 +182,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (socket) {
         assert(socket instanceof net.Socket, "socket event should emit with socket");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should follow redirects over https", function (done) {
+  it("should follow redirects over https", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
     app.get("/c", sendsJson({ baz: "quz" }));
@@ -208,11 +199,10 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { baz: "quz" });
         assert.deepEqual(res.responseUrl, "https://localhost:3601/c");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should destroy responses", function (done) {
+  it("should destroy responses", function () {
     app.get("/a", hangingRedirectTo("/b"));
     app.get("/b", hangingRedirectTo("/c"));
     app.get("/c", hangingRedirectTo("/d"));
@@ -227,35 +217,33 @@ describe("follow-redirects ", function () {
       };
     }
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
       }))
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { a: "b" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should honor query params in redirects", function (done) {
+  it("should honor query params in redirects", function () {
     app.get("/a", redirectsTo("/b?greeting=hello"));
     app.get("/b", function (req, res) {
       res.json({ greeting: req.query.greeting });
     });
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
       }))
       .then(function (res) {
         assert.deepEqual(res.parsedJson, { greeting: "hello" });
         assert.deepEqual(res.responseUrl, "http://localhost:3600/b?greeting=hello");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should allow aborting", function (done) {
+  it("should allow aborting", function () {
     var request;
 
     app.get("/a", redirectsTo("/b"));
@@ -264,7 +252,7 @@ describe("follow-redirects ", function () {
       request.abort();
     });
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var currentTime = Date.now();
         request = http.get("http://localhost:3600/a", resolve);
@@ -279,36 +267,33 @@ describe("follow-redirects ", function () {
           request.on("error", noop);
           resolve();
         }
-      }))
-      .nodeify(done);
+      }));
   });
 
-  it("should provide connection", function (done) {
+  it("should provide connection", function () {
     var request;
 
     app.get("/a", sendsJson({}));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve) {
         request = http.get("http://localhost:3600/a", resolve);
       }))
       .then(function () {
         assert(request.connection instanceof net.Socket);
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should provide flushHeaders", function (done) {
+  it("should provide flushHeaders", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", sendsJson({ foo: "bar" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.flushHeaders();
         request.on("error", reject);
-      }))
-      .nodeify(done);
+      }));
   });
 
   it("should provide getHeader", function () {
@@ -318,13 +303,13 @@ describe("follow-redirects ", function () {
     req.abort();
   });
 
-  it("should provide removeHeader", function (done) {
+  it("should provide removeHeader", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", function (req, res) {
       res.end(JSON.stringify(req.headers));
     });
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request("http://localhost:3600/a", concatJson(resolve, reject));
         req.setHeader("my-header", "my value");
@@ -336,17 +321,16 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         var headers = res.parsedJson;
         assert.equal(headers["my-header"], undefined);
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should provide setHeader", function (done) {
+  it("should provide setHeader", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", function (req, res) {
       res.end(JSON.stringify(req.headers));
     });
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request("http://localhost:3600/a", concatJson(resolve, reject));
         req.setHeader("my-header", "my value");
@@ -356,60 +340,55 @@ describe("follow-redirects ", function () {
       .then(function (res) {
         var headers = res.parsedJson;
         assert.equal(headers["my-header"], "my value");
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should provide setNoDelay", function (done) {
+  it("should provide setNoDelay", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", sendsJson({ foo: "bar" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.setNoDelay(true);
         request.on("error", reject);
-      }))
-      .nodeify(done);
+      }));
   });
 
-  it("should provide setSocketKeepAlive", function (done) {
+  it("should provide setSocketKeepAlive", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", sendsJson({ foo: "bar" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.setSocketKeepAlive(true);
-      }))
-      .nodeify(done);
+      }));
   });
 
-  it("should provide setTimeout", function (done) {
+  it("should provide setTimeout", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", sendsJson({ foo: "bar" }));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve) {
         var request = http.get("http://localhost:3600/a", resolve);
         request.setTimeout(1000);
-      }))
-      .nodeify(done);
+      }));
   });
 
-  it("should provide socket", function (done) {
+  it("should provide socket", function () {
     var request;
 
     app.get("/a", sendsJson({}));
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve) {
         request = http.get("http://localhost:3600/a", resolve);
       }))
       .then(function () {
         assert(request.socket instanceof net.Socket);
-      })
-      .nodeify(done);
+      });
   });
 
   describe("should obey a `maxRedirects` property", function () {
@@ -421,8 +400,8 @@ describe("follow-redirects ", function () {
       app.get("/r0", sendsJson({ foo: "bar" }));
     });
 
-    it("which defaults to 21", function (done) {
-      server.start(app)
+    it("which defaults to 21", function () {
+      return server.start(app)
         // 21 redirects should work fine
         .then(asPromise(function (resolve, reject) {
           http.get("http://localhost:3600/r21", concatJson(resolve, reject)).on("error", reject);
@@ -437,35 +416,32 @@ describe("follow-redirects ", function () {
         }))
         .then(function (err) {
           assert.ok(err.toString().match(/Max redirects exceeded/));
-        })
-        .nodeify(done);
+        });
     });
 
-    it("which can be set globally", function (done) {
+    it("which can be set globally", function () {
       followRedirects.maxRedirects = 22;
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           http.get("http://localhost:3600/r22", concatJson(resolve, reject)).on("error", reject);
         }))
         .then(function (res) {
           assert.deepEqual(res.parsedJson, { foo: "bar" });
           assert.deepEqual(res.responseUrl, "http://localhost:3600/r0");
-        })
-        .nodeify(done);
+        });
     });
 
-    it("set as an option on an individual request", function (done) {
+    it("set as an option on an individual request", function () {
       var u = url.parse("http://localhost:3600/r2");
       u.maxRedirects = 1;
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           http.get(u, reject).on("error", resolve);
         }))
         .then(function (err) {
           assert.ok(err.toString().match(/Max redirects exceeded/));
-        })
-        .nodeify(done);
+        });
     });
   });
 
@@ -477,8 +453,8 @@ describe("follow-redirects ", function () {
     });
 
     describe("when not set", function () {
-      it("should not track redirects", function (done) {
-        server.start(app)
+      it("should not track redirects", function () {
+        return server.start(app)
           .then(asPromise(function (resolve, reject) {
             var opts = url.parse("http://localhost:3600/a");
             http.get(opts, concatJson(resolve, reject)).on("error", reject);
@@ -486,14 +462,13 @@ describe("follow-redirects ", function () {
           .then(function (res) {
             var redirects = res.redirects;
             assert.equal(redirects.length, 0);
-          })
-          .nodeify(done);
+          });
       });
     });
 
     describe("when set to true", function () {
-      it("should track redirects", function (done) {
-        server.start(app)
+      it("should track redirects", function () {
+        return server.start(app)
           .then(asPromise(function (resolve, reject) {
             var opts = url.parse("http://localhost:3600/a");
             opts.trackRedirects = true;
@@ -514,8 +489,7 @@ describe("follow-redirects ", function () {
             assert.equal(redirects[2].url, "http://localhost:3600/c");
             assert.equal(redirects[2].statusCode, 200);
             assert.equal(redirects[2].headers["content-type"], "application/json; charset=utf-8");
-          })
-          .nodeify(done);
+          });
       });
     });
   });
@@ -536,11 +510,11 @@ describe("follow-redirects ", function () {
       var description = "should " +
           (originalMethod === redirectedMethod ? "reuse " + originalMethod :
             "switch from " + originalMethod + " to " + redirectedMethod);
-      it(description, function (done) {
+      it(description, function () {
         app[originalMethod.toLowerCase()]("/a", redirectsTo(statusCode, "/b"));
         app[redirectedMethod.toLowerCase()]("/b", sendsJson({ a: "b" }));
 
-        server.start(app)
+        return server.start(app)
           .then(asPromise(function (resolve, reject) {
             var opts = url.parse("http://localhost:3600/a");
             opts.method = originalMethod;
@@ -551,8 +525,7 @@ describe("follow-redirects ", function () {
             if (res.statusCode !== 200) {
               throw new Error("Did not use " + redirectedMethod);
             }
-          })
-          .nodeify(done);
+          });
       });
     }
 
@@ -564,12 +537,12 @@ describe("follow-redirects ", function () {
   });
 
   describe("should handle cross protocol redirects ", function () {
-    it("(https -> http -> https)", function (done) {
+    it("(https -> http -> https)", function () {
       app.get("/a", redirectsTo("http://localhost:3600/b"));
       app2.get("/b", redirectsTo("https://localhost:3601/c"));
       app.get("/c", sendsJson({ yes: "no" }));
 
-      BPromise.all([server.start(httpsOptions(app)), server.start(app2)])
+      Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("https://localhost:3601/a");
           opts.ca = ca;
@@ -578,16 +551,15 @@ describe("follow-redirects ", function () {
         .then(function (res) {
           assert.deepEqual(res.parsedJson, { yes: "no" });
           assert.deepEqual(res.responseUrl, "https://localhost:3601/c");
-        })
-        .nodeify(done);
+        });
     });
 
-    it("(http -> https -> http)", function (done) {
+    it("(http -> https -> http)", function () {
       app.get("/a", redirectsTo("https://localhost:3601/b"));
       app2.get("/b", redirectsTo("http://localhost:3600/c"));
       app.get("/c", sendsJson({ hello: "goodbye" }));
 
-      BPromise.all([server.start(app), server.start(httpsOptions(app2))])
+      Promise.all([server.start(app), server.start(httpsOptions(app2))])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("http://localhost:3600/a");
           opts.ca = ca;
@@ -596,30 +568,28 @@ describe("follow-redirects ", function () {
         .then(function (res) {
           assert.deepEqual(res.parsedJson, { hello: "goodbye" });
           assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
-        })
-        .nodeify(done);
+        });
     });
   });
 
   describe("should error on an unsupported protocol redirect", function () {
-    it("(http -> about)", function (done) {
+    it("(http -> about)", function () {
       app.get("/a", redirectsTo("about:blank"));
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           http.get("http://localhost:3600/a")
-            .on("response", done.bind(null, new Error("unexpected response")))
+            .on("response", function () { return reject(new Error("unexpected response")); })
             .on("error", reject);
         }))
         .catch(function (err) {
           assert(err instanceof Error);
           assert.equal(err.message, "Unsupported protocol about:");
-        })
-        .nodeify(done);
+        });
     });
   });
 
-  it("should support writing into request stream without redirects", function (done) {
+  it("should support writing into request stream without redirects", function () {
     app.post("/a", function (req, res) {
       req.pipe(res);
     });
@@ -627,7 +597,7 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         req.end(fs.readFileSync(testFile), "buffer");
@@ -639,11 +609,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should support writing into request stream with redirects", function (done) {
+  it("should support writing into request stream with redirects", function () {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
     app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
     app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
@@ -654,7 +623,7 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         req.end(fs.readFileSync(testFile), "buffer");
@@ -665,11 +634,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should support piping into request stream without redirects", function (done) {
+  it("should support piping into request stream without redirects", function () {
     app.post("/a", function (req, res) {
       req.pipe(res);
     });
@@ -677,7 +645,7 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         fs.createReadStream(testFile).pipe(req);
@@ -689,11 +657,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should support piping into request stream with redirects", function (done) {
+  it("should support piping into request stream with redirects", function () {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
     app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
     app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
@@ -704,7 +671,7 @@ describe("follow-redirects ", function () {
     var opts = url.parse("http://localhost:3600/a");
     opts.method = "POST";
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         fs.createReadStream(testFile).pipe(req);
@@ -715,11 +682,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should support piping into request stream with explicit Content-Length without redirects", function (done) {
+  it("should support piping into request stream with explicit Content-Length without redirects", function () {
     app.post("/a", function (req, res) {
       req.pipe(res);
     });
@@ -730,7 +696,7 @@ describe("follow-redirects ", function () {
       "Content-Length": fs.readFileSync(testFile).byteLength,
     };
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         fs.createReadStream(testFile).pipe(req);
@@ -742,11 +708,10 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
-  it("should support piping into request stream with explicit Content-Length with redirects", function (done) {
+  it("should support piping into request stream with explicit Content-Length with redirects", function () {
     app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
     app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
     app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
@@ -760,7 +725,7 @@ describe("follow-redirects ", function () {
       "Content-Length": fs.readFileSync(testFile).byteLength,
     };
 
-    server.start(app)
+    return server.start(app)
       .then(asPromise(function (resolve, reject) {
         var req = http.request(opts, resolve);
         fs.createReadStream(testFile).pipe(req);
@@ -771,8 +736,7 @@ describe("follow-redirects ", function () {
       }))
       .then(function (str) {
         assert.equal(str, fs.readFileSync(testFile, "utf8"));
-      })
-      .nodeify(done);
+      });
   });
 
   describe("should obey a `maxBodyLength` property", function () {
@@ -780,7 +744,7 @@ describe("follow-redirects ", function () {
       assert.equal(followRedirects.maxBodyLength, 10 * 1024 * 1024);
     });
 
-    it("set globally, on write", function (done) {
+    it("set globally, on write", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
@@ -788,7 +752,7 @@ describe("follow-redirects ", function () {
       opts.method = "POST";
 
       followRedirects.maxBodyLength = 8;
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, reject);
           req.write("12345678");
@@ -797,11 +761,10 @@ describe("follow-redirects ", function () {
         }))
         .then(function (error) {
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
-        })
-        .nodeify(done);
+        });
     });
 
-    it("set per request, on write", function (done) {
+    it("set per request, on write", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
@@ -809,7 +772,7 @@ describe("follow-redirects ", function () {
       opts.method = "POST";
       opts.maxBodyLength = 8;
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, reject);
           req.write("12345678");
@@ -818,11 +781,10 @@ describe("follow-redirects ", function () {
         }))
         .then(function (error) {
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
-        })
-        .nodeify(done);
+        });
     });
 
-    it("set globally, on end", function (done) {
+    it("set globally, on end", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
@@ -830,7 +792,7 @@ describe("follow-redirects ", function () {
       opts.method = "POST";
 
       followRedirects.maxBodyLength = 8;
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, reject);
           req.write("12345678");
@@ -839,11 +801,10 @@ describe("follow-redirects ", function () {
         }))
         .then(function (error) {
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
-        })
-        .nodeify(done);
+        });
     });
 
-    it("set per request, on end", function (done) {
+    it("set per request, on end", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
@@ -851,7 +812,7 @@ describe("follow-redirects ", function () {
       opts.method = "POST";
       opts.maxBodyLength = 8;
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, reject);
           req.write("12345678");
@@ -860,8 +821,7 @@ describe("follow-redirects ", function () {
         }))
         .then(function (error) {
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
-        })
-        .nodeify(done);
+        });
     });
   });
 
@@ -882,7 +842,7 @@ describe("follow-redirects ", function () {
 
   describe("should drop the entity and associated headers", function () {
     function itDropsBodyAndHeaders(originalMethod) {
-      it("when switching from " + originalMethod + " to GET", function (done) {
+      it("when switching from " + originalMethod + " to GET", function () {
         app[originalMethod.toLowerCase()]("/a", redirectsTo(302, "http://localhost:3600/b"));
         app.get("/b", function (req, res) {
           res.write(JSON.stringify(req.headers));
@@ -897,7 +857,7 @@ describe("follow-redirects ", function () {
           "Content-Length": fs.readFileSync(testFile).byteLength,
         };
 
-        server.start(app)
+        return server.start(app)
           .then(asPromise(function (resolve, reject) {
             var req = http.request(opts, resolve);
             fs.createReadStream(testFile).pipe(req);
@@ -912,8 +872,7 @@ describe("follow-redirects ", function () {
             assert.equal(body.other, "value");
             assert.equal(body["content-type"], undefined);
             assert.equal(body["content-length"], undefined);
-          })
-          .nodeify(done);
+          });
       });
     }
     itDropsBodyAndHeaders("POST");
@@ -921,14 +880,14 @@ describe("follow-redirects ", function () {
   });
 
   describe("when redirecting to a different host while the host header is set", function () {
-    it("uses the new host header", function (done) {
+    it("uses the new host header", function () {
       app.get("/a", redirectsTo(302, "http://localhost:3600/b"));
       app.get("/b", function (req, res) {
         res.write(JSON.stringify(req.headers));
         req.pipe(res); // will invalidate JSON if non-empty
       });
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("http://localhost:3600/a");
           opts.headers = { hOsT: "otherhost.com" };
@@ -942,17 +901,16 @@ describe("follow-redirects ", function () {
         .then(function (str) {
           var body = JSON.parse(str);
           assert.equal(body.host, "localhost:3600");
-        })
-        .nodeify(done);
+        });
     });
   });
 
   describe("when the followRedirects option is set to false", function () {
-    it("does not redirect", function (done) {
+    it("does not redirect", function () {
       app.get("/a", redirectsTo(302, "/b"));
       app.get("/b", sendsJson({ a: "b" }));
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("http://localhost:3600/a");
           opts.followRedirects = false;
@@ -961,13 +919,12 @@ describe("follow-redirects ", function () {
         .then(function (res) {
           assert.deepEqual(res.statusCode, 302);
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
-        })
-        .nodeify(done);
+        });
     });
   });
 
   describe("should choose the right agent per protocol", function () {
-    it("(https -> http -> https)", function (done) {
+    it("(https -> http -> https)", function () {
       app.get("/a", redirectsTo("http://localhost:3600/b"));
       app2.get("/b", redirectsTo("https://localhost:3601/c"));
       app.get("/c", sendsJson({ yes: "no" }));
@@ -984,7 +941,7 @@ describe("follow-redirects ", function () {
         return agent;
       }
 
-      BPromise.all([server.start(httpsOptions(app)), server.start(app2)])
+      Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("https://localhost:3601/a");
           opts.ca = ca;
@@ -996,19 +953,18 @@ describe("follow-redirects ", function () {
           assert.deepEqual(httpsAgent._requests, ["/a", "/c"]);
           assert.deepEqual(res.parsedJson, { yes: "no" });
           assert.deepEqual(res.responseUrl, "https://localhost:3601/c");
-        })
-        .nodeify(done);
+        });
     });
   });
 
   describe("should not hang on empty writes", function () {
-    it("when data is the empty string without encoding", function (done) {
+    it("when data is the empty string without encoding", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
       var opts = url.parse("http://localhost:3600/a");
       opts.method = "POST";
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
           req.write("");
@@ -1020,17 +976,16 @@ describe("follow-redirects ", function () {
         .then(asPromise(function (resolve, reject, res) {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
           res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
-        }))
-        .nodeify(done);
+        }));
     });
 
-    it("when data is the empty string with encoding", function (done) {
+    it("when data is the empty string with encoding", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
       var opts = url.parse("http://localhost:3600/a");
       opts.method = "POST";
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
           req.write("");
@@ -1042,17 +997,16 @@ describe("follow-redirects ", function () {
         .then(asPromise(function (resolve, reject, res) {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
           res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
-        }))
-        .nodeify(done);
+        }));
     });
 
-    it("when data is Buffer.from('')", function (done) {
+    it("when data is Buffer.from('')", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
       var opts = url.parse("http://localhost:3600/a");
       opts.method = "POST";
 
-      server.start(app)
+      return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.request(opts, resolve);
           req.write(Buffer.from(""));
@@ -1064,8 +1018,7 @@ describe("follow-redirects ", function () {
         .then(asPromise(function (resolve, reject, res) {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
           res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
-        }))
-        .nodeify(done);
+        }));
     });
   });
 
