@@ -2,13 +2,11 @@
 
 Drop-in replacement for Nodes `http` and `https` that automatically follows redirects.
 
-[![npm version](https://badge.fury.io/js/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
+[![npm version](https://img.shields.io/npm/v/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
 [![Build Status](https://travis-ci.org/follow-redirects/follow-redirects.svg?branch=master)](https://travis-ci.org/follow-redirects/follow-redirects)
 [![Coverage Status](https://coveralls.io/repos/follow-redirects/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/follow-redirects/follow-redirects?branch=master)
 [![Dependency Status](https://david-dm.org/follow-redirects/follow-redirects.svg)](https://david-dm.org/follow-redirects/follow-redirects)
-[![devDependency Status](https://david-dm.org/follow-redirects/follow-redirects/dev-status.svg)](https://david-dm.org/follow-redirects/follow-redirects#info=devDependencies)
-
-[![NPM](https://nodei.co/npm/follow-redirects.png?downloads=true)](https://nodei.co/npm/follow-redirects/)
+[![npm downloads](https://img.shields.io/npm/dm/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
 
 `follow-redirects` provides [request](https://nodejs.org/api/http.html#http_http_request_options_callback) and [get](https://nodejs.org/api/http.html#http_http_get_options_callback)
  methods that behave identically to those found on the native [http](https://nodejs.org/api/http.html#http_http_request_options_callback) and [https](https://nodejs.org/api/https.html#https_https_request_options_callback)
