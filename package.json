@@ -28,14 +28,10 @@
     "location",
     "utility"
   ],
-  "author": {
-    "name": "Olivier Lalonde",
-    "email": "olalonde@gmail.com",
-    "url": "http://www.syskall.com"
-  },
+  "author": "Ruben Verborgh <ruben@verborgh.org> (https://ruben.verborgh.org/)",
   "contributors": [
-    "James Talmage <james@talmage.io>",
-    "Ruben Verborgh <ruben@verborgh.org> (https://ruben.verborgh.org/)"
+    "Olivier Lalonde <olalonde@gmail.com> (http://www.syskall.com)",
+    "James Talmage <james@talmage.io>"
   ],
   "files": [
     "index.js",
