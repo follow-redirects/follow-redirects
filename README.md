@@ -3,10 +3,10 @@
 Drop-in replacement for Nodes `http` and `https` that automatically follows redirects.
 
 [![npm version](https://badge.fury.io/js/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
-[![Build Status](https://travis-ci.org/olalonde/follow-redirects.svg?branch=master)](https://travis-ci.org/olalonde/follow-redirects)
-[![Coverage Status](https://coveralls.io/repos/olalonde/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/olalonde/follow-redirects?branch=master)
-[![Dependency Status](https://david-dm.org/olalonde/follow-redirects.svg)](https://david-dm.org/olalonde/follow-redirects)
-[![devDependency Status](https://david-dm.org/olalonde/follow-redirects/dev-status.svg)](https://david-dm.org/olalonde/follow-redirects#info=devDependencies)
+[![Build Status](https://travis-ci.org/follow-redirects/follow-redirects.svg?branch=master)](https://travis-ci.org/follow-redirects/follow-redirects)
+[![Coverage Status](https://coveralls.io/repos/follow-redirects/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/follow-redirects/follow-redirects?branch=master)
+[![Dependency Status](https://david-dm.org/follow-redirects/follow-redirects.svg)](https://david-dm.org/follow-redirects/follow-redirects)
+[![devDependency Status](https://david-dm.org/follow-redirects/follow-redirects/dev-status.svg)](https://david-dm.org/follow-redirects/follow-redirects#info=devDependencies)
 
 [![NPM](https://nodei.co/npm/follow-redirects.png?downloads=true)](https://nodei.co/npm/follow-redirects/)
 
@@ -136,7 +136,7 @@ The `browserify-http` module has not kept pace with node development, and no lon
 
 ## Contributing
 
-Pull Requests are always welcome. Please [file an issue](https://github.com/olalonde/follow-redirects/issues)
+Pull Requests are always welcome. Please [file an issue](https://github.com/follow-redirects/follow-redirects/issues)
  detailing your proposal before you invest your valuable time. Additional features and bug fixes should be accompanied
  by tests. You can run the test suite locally with a simple `npm test` command.
 
@@ -154,4 +154,4 @@ Pull Requests are always welcome. Please [file an issue](https://github.com/olal
 
 ## License
 
-MIT: [http://olalonde.mit-license.org](http://olalonde.mit-license.org)
+[https://github.com/follow-redirects/follow-redirects/blob/master/LICENSE](MIT License)

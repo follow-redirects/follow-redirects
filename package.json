@@ -13,11 +13,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:olalonde/follow-redirects.git"
+    "url": "git@github.com:follow-redirects/follow-redirects.git"
   },
-  "homepage": "https://github.com/olalonde/follow-redirects",
+  "homepage": "https://github.com/follow-redirects/follow-redirects",
   "bugs": {
-    "url": "https://github.com/olalonde/follow-redirects/issues"
+    "url": "https://github.com/follow-redirects/follow-redirects/issues"
   },
   "keywords": [
     "http",
