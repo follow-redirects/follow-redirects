@@ -121,6 +121,30 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("http.get with host option and callback - redirect", function () {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", redirectsTo("/c"));
+    app.get("/c", redirectsTo("/d"));
+    app.get("/d", redirectsTo("/e"));
+    app.get("/e", redirectsTo("/f"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        var options = {
+          host: "localhost",
+          port: 3600,
+          path: "/a",
+          method: "GET",
+        };
+        http.get(options, concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
+      });
+  });
+
   it("http.get with response event", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));

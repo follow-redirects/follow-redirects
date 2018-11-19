@@ -28,6 +28,17 @@ function RedirectableRequest(options, responseCallback) {
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
 
+  // Since http.request treats host as an alias of hostname,
+  // but the url module interprets host as hostname plus port,
+  // eliminate the host property to avoid confusion.
+  if (options.host) {
+    // Use hostname if set, because it has precedence
+    if (!options.hostname) {
+      options.hostname = options.host;
+    }
+    delete options.host;
+  }
+
   // Attach a callback if passed
   if (responseCallback) {
     this.on("response", responseCallback);
