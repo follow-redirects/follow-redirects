@@ -256,13 +256,15 @@ describe("follow-redirects", function () {
       .then(asPromise(function (resolve, reject) {
         var currentTime = Date.now();
         request = http.get("http://localhost:3600/a", resolve);
-        assert.equal(typeof request.aborted, "undefined");
+        assert(request.aborted === false || // Node >= v11.0.0
+               typeof request.aborted === "undefined"); // Node < v11.0.0
         request.on("response", reject);
         request.on("error", reject);
         request.on("abort", onAbort);
         function onAbort() {
-          assert.equal(typeof request.aborted, "number");
-          assert(request.aborted > currentTime);
+          assert(request.aborted === true || // Node >= v11.0.0
+                 typeof request.aborted === "number" &&
+                   request.aborted > currentTime); // Node < v11.0.0
           request.removeListener("error", reject);
           request.on("error", noop);
           resolve();
