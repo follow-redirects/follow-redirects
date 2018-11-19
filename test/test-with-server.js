@@ -190,7 +190,7 @@ describe("follow-redirects", function () {
     app.get("/b", redirectsTo("/c"));
     app.get("/c", sendsJson({ baz: "quz" }));
 
-    server.start(httpsOptions(app))
+    return server.start(httpsOptions(app))
       .then(asPromise(function (resolve, reject) {
         var opts = url.parse("https://localhost:3601/a");
         opts.ca = ca;
@@ -542,7 +542,7 @@ describe("follow-redirects", function () {
       app2.get("/b", redirectsTo("https://localhost:3601/c"));
       app.get("/c", sendsJson({ yes: "no" }));
 
-      Promise.all([server.start(httpsOptions(app)), server.start(app2)])
+      return Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("https://localhost:3601/a");
           opts.ca = ca;
@@ -559,7 +559,7 @@ describe("follow-redirects", function () {
       app2.get("/b", redirectsTo("http://localhost:3600/c"));
       app.get("/c", sendsJson({ hello: "goodbye" }));
 
-      Promise.all([server.start(app), server.start(httpsOptions(app2))])
+      return Promise.all([server.start(app), server.start(httpsOptions(app2))])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("http://localhost:3600/a");
           opts.ca = ca;
@@ -941,7 +941,7 @@ describe("follow-redirects", function () {
         return agent;
       }
 
-      Promise.all([server.start(httpsOptions(app)), server.start(app2)])
+      return Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
           var opts = url.parse("https://localhost:3601/a");
           opts.ca = ca;
