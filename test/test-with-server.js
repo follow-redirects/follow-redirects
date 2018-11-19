@@ -18,7 +18,7 @@ var asPromise = util.asPromise;
 
 var testFile = path.resolve(__dirname, "input.txt");
 
-describe("follow-redirects ", function () {
+describe("follow-redirects", function () {
   function httpsOptions(app) {
     return {
       app: app,
