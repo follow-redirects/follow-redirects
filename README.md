@@ -96,39 +96,23 @@ var followRedirects = require('follow-redirects').wrap({
 
 Such custom protocols only need an implementation of the `request` method.
 
-## Browserify Usage
+## Browser Usage
 
-Due to the way `XMLHttpRequest` works, the `browserify` versions of `http` and `https` already follow redirects.
- If you are *only* targeting the browser, then this library has little value for you. If you want to write cross
- platform code for node and the browser, `follow-redirects` provides a great solution for making the native node
- modules behave the same as they do in browserified builds in the browser. To avoid bundling unnecessary code
- you should tell browserify to swap out `follow-redirects` with the standard modules when bundling.
- To make this easier, you need to change how you require the modules:
+Due to the way the browser works,
+the `http` and `https` browser equivalents perform redirects by default.
 
+By requiring `follow-redirects` this way:
 ```javascript
 var http = require('follow-redirects/http');
 var https = require('follow-redirects/https');
 ```
+you can easily tell webpack and friends to replace
+`follow-redirect` by the built-in versions:
 
-You can then replace `follow-redirects` in your browserify configuration like so:
-
-```javascript
-"browser": {
+```json
+{
   "follow-redirects/http"  : "http",
   "follow-redirects/https" : "https"
-}
-```
-
-The `browserify-http` module has not kept pace with node development, and no long behaves identically to the native
- module when running in the browser. If you are experiencing problems, you may want to check out
- [browserify-http-2](https://www.npmjs.com/package/http-browserify-2). It is more actively maintained and
- attempts to address a few of the shortcomings of `browserify-http`. In that case, your browserify config should
- look something like this:
-
-```javascript
-"browser": {
-  "follow-redirects/http"  : "browserify-http-2/http",
-  "follow-redirects/https" : "browserify-http-2/https"
 }
 ```
 
