@@ -202,20 +202,26 @@ RedirectableRequest.prototype._performRequest = function () {
     var self = this;
     var buffers = this._requestBodyBuffers;
     (function writeNext(error) {
-      if (self._currentRequest !== request) {
-        request.abort();
-        return;
-      }
-      if (error) {
-        self.emit("error", error);
-        return;
-      }
-      if (i < buffers.length) {
-        var buffer = buffers[i++];
-        request.write(buffer.data, buffer.encoding, writeNext);
-      }
-      else if (self._ended) {
-        request.end();
+      // Only write if this request has not been redirected yet
+      /* istanbul ignore else */
+      if (request === self._currentRequest) {
+        // Report any write errors
+        /* istanbul ignore if */
+        if (error) {
+          self.emit("error", error);
+        }
+        // Write the next buffer if there are still left
+        else if (i < buffers.length) {
+          var buffer = buffers[i++];
+          /* istanbul ignore else */
+          if (!request.finished) {
+            request.write(buffer.data, buffer.encoding, writeNext);
+          }
+        }
+        // End the request if `end` has been called on us
+        else if (self._ended) {
+          request.end();
+        }
       }
     }());
   }
@@ -243,6 +249,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
       response.statusCode >= 300 && response.statusCode < 400) {
     // Abort the current request
     this._currentRequest.removeAllListeners();
+    this._currentRequest.on("error", noop);
     this._currentRequest.abort();
 
     // RFC7231§6.4: A client SHOULD detect and intervene
@@ -345,6 +352,8 @@ function wrap(protocols) {
   });
   return exports;
 }
+
+function noop() { /* empty */ }
 
 // Exports
 module.exports = wrap({ http: http, https: https });
