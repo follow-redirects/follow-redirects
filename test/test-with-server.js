@@ -649,6 +649,33 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("errors on write after end", function () {
+    app.post("/a", function (req, res) {
+      req.pipe(res);
+    });
+
+    var opts = url.parse("http://localhost:3600/a");
+    opts.method = "POST";
+
+    return server.start(app)
+      .then(function () {
+        var req = http.request(opts);
+        req.write(testFileString);
+        req.end();
+        try {
+          req.write(testFileString);
+        }
+        catch (error) {
+          assert.equal(error.message, "write after end");
+          return;
+        }
+        finally {
+          req.abort();
+        }
+        throw new Error("no error");
+      });
+  });
+
   it("should support writing into request stream without redirects", function () {
     app.post("/a", function (req, res) {
       req.pipe(res);
