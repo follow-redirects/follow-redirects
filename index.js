@@ -23,6 +23,7 @@ function RedirectableRequest(options, responseCallback) {
   Writable.call(this);
   options.headers = options.headers || {};
   this._options = options;
+  this._ended = false;
   this._redirectCount = 0;
   this._redirects = [];
   this._requestBodyLength = 0;
@@ -112,8 +113,10 @@ RedirectableRequest.prototype.end = function (data, encoding, callback) {
   }
 
   // Write data and end
+  var self = this;
   var currentRequest = this._currentRequest;
   this.write(data || "", encoding, function () {
+    self._ended = true;
     currentRequest.end(null, null, callback);
   });
 };
@@ -183,13 +186,14 @@ RedirectableRequest.prototype._performRequest = function () {
   if (this._isRedirect) {
     // Write the request entity and end.
     var i = 0;
+    var self = this;
     var buffers = this._requestBodyBuffers;
     (function writeNext() {
       if (i < buffers.length) {
         var buffer = buffers[i++];
         request.write(buffer.data, buffer.encoding, writeNext);
       }
-      else {
+      else if (self._ended) {
         request.end();
       }
     }());

@@ -617,6 +617,38 @@ describe("follow-redirects", function () {
     });
   });
 
+  it("should wait for an explicit call to end", function () {
+    var redirected = false;
+    app.post("/a", redirectsTo(307, "http://localhost:3600/b"));
+    app.post("/b", redirectsTo(307, "http://localhost:3600/c"));
+    app.post("/c", redirectsTo(307, "http://localhost:3600/d"));
+    app.post("/d", function (req, res) {
+      redirected = true;
+      req.pipe(res);
+    });
+
+    var req;
+    var opts = url.parse("http://localhost:3600/a");
+    opts.method = "POST";
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        req = http.request(opts, resolve);
+        req.write(testFileString);
+        req.on("error", reject);
+      }))
+      .then(asPromise(function (resolve, reject, res) {
+        assert(redirected);
+        // If we can still write to the request, it wasn't closed yet
+        req.write(testFileString);
+        req.end();
+        res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+      }))
+      .then(function (str) {
+        assert.equal(str, testFileString + testFileString);
+      });
+  });
+
   it("should support writing into request stream without redirects", function () {
     app.post("/a", function (req, res) {
       req.pipe(res);
