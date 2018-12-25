@@ -201,7 +201,15 @@ RedirectableRequest.prototype._performRequest = function () {
     var i = 0;
     var self = this;
     var buffers = this._requestBodyBuffers;
-    (function writeNext() {
+    (function writeNext(error) {
+      if (self._currentRequest !== request) {
+        request.abort();
+        return;
+      }
+      if (error) {
+        self.emit("error", error);
+        return;
+      }
       if (i < buffers.length) {
         var buffer = buffers[i++];
         request.write(buffer.data, buffer.encoding, writeNext);
@@ -233,6 +241,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
   var location = response.headers.location;
   if (location && this._options.followRedirects !== false &&
       response.statusCode >= 300 && response.statusCode < 400) {
+    // Abort the current request
+    this._currentRequest.removeAllListeners();
+    this._currentRequest.abort();
+
     // RFC7231§6.4: A client SHOULD detect and intervene
     // in cyclical redirections (i.e., "infinite" redirection loops).
     if (++this._redirectCount > this._options.maxRedirects) {
