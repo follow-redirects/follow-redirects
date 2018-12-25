@@ -152,4 +152,4 @@ Pull Requests are always welcome. Please [file an issue](https://github.com/foll
 
 ## License
 
-[https://github.com/follow-redirects/follow-redirects/blob/master/LICENSE](MIT License)
+[MIT License](https://github.com/follow-redirects/follow-redirects/blob/master/LICENSE)
