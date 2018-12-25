@@ -3,6 +3,7 @@ var assert = require("assert");
 var net = require("net");
 var server = require("./lib/test-server")({ https: 3601, http: 3600 });
 var url = require("url");
+var URL = url.URL;
 var followRedirects = require("..");
 var http = followRedirects.http;
 var https = followRedirects.https;
@@ -66,6 +67,29 @@ describe("follow-redirects", function () {
         assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
       });
   });
+
+  if (URL) {
+    it("http.get with URL object and callback - redirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", redirectsTo("/d"));
+      app.get("/d", redirectsTo("/e"));
+      app.get("/e", redirectsTo("/f"));
+      app.get("/f", sendsJson({ a: "b" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(
+            new URL("http://localhost:3600/a"),
+            concatJson(resolve, reject)
+          ).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
+        });
+    });
+  }
 
   it("http.get with options object and callback - redirect", function () {
     app.get("/a", redirectsTo("/b"));
@@ -628,12 +652,10 @@ describe("follow-redirects", function () {
     });
 
     var req;
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
 
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        req = http.request(opts, resolve);
+        req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
         req.write(testFileString);
         req.on("error", reject);
       }))
@@ -654,12 +676,9 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     return server.start(app)
       .then(function () {
-        var req = http.request(opts);
+        var req = http.request("http://localhost:3600/a", { method: "POST" });
         req.write(testFileString);
         req.end();
         try {
@@ -681,12 +700,9 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        var req = http.request(opts, resolve);
+        var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
         req.end(testFileBuffer, "buffer");
         req.on("error", reject);
       }))
@@ -707,12 +723,9 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        var req = http.request(opts, resolve);
+        var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
         req.end(testFileBuffer, "buffer");
         req.on("error", reject);
       }))
@@ -729,12 +742,9 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        var req = http.request(opts, resolve);
+        var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
         fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
@@ -755,12 +765,9 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        var req = http.request(opts, resolve);
+        var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
         fs.createReadStream(testFile).pipe(req);
         req.on("error", reject);
       }))
@@ -835,13 +842,11 @@ describe("follow-redirects", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
-      var opts = url.parse("http://localhost:3600/a");
-      opts.method = "POST";
 
       followRedirects.maxBodyLength = 8;
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.request(opts, reject);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, reject);
           req.write("12345678");
           req.on("error", resolve);
           req.write("9");
@@ -875,13 +880,11 @@ describe("follow-redirects", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
-      var opts = url.parse("http://localhost:3600/a");
-      opts.method = "POST";
 
       followRedirects.maxBodyLength = 8;
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.request(opts, reject);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, reject);
           req.write("12345678");
           req.on("error", resolve);
           req.end("9");
@@ -1048,12 +1051,9 @@ describe("follow-redirects", function () {
     it("when data is the empty string without encoding", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
-      var opts = url.parse("http://localhost:3600/a");
-      opts.method = "POST";
-
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.write("");
           req.write("", function () {
             req.end("");
@@ -1069,12 +1069,9 @@ describe("follow-redirects", function () {
     it("when data is the empty string with encoding", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
-      var opts = url.parse("http://localhost:3600/a");
-      opts.method = "POST";
-
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.write("");
           req.write("", "utf8", function () {
             req.end("", "utf8");
@@ -1090,12 +1087,9 @@ describe("follow-redirects", function () {
     it("when data is Buffer.from('')", function () {
       app.post("/a", sendsJson({ foo: "bar" }));
 
-      var opts = url.parse("http://localhost:3600/a");
-      opts.method = "POST";
-
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.write(Buffer.from(""));
           req.write(Buffer.from(""), function () {
             req.end(Buffer.from(""));
@@ -1110,9 +1104,6 @@ describe("follow-redirects", function () {
   });
 
   describe("end accepts as arguments", function () {
-    var opts = url.parse("http://localhost:3600/a");
-    opts.method = "POST";
-
     var called;
     function setCalled() {
       called = true;
@@ -1129,7 +1120,7 @@ describe("follow-redirects", function () {
     it("(none)", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end();
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1143,7 +1134,7 @@ describe("follow-redirects", function () {
     it("the empty string", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end("");
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1157,7 +1148,7 @@ describe("follow-redirects", function () {
     it("a non-empty string", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end("abc");
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1171,7 +1162,7 @@ describe("follow-redirects", function () {
     it("a non-empty string and an encoding", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end("abc", "utf8");
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1185,7 +1176,7 @@ describe("follow-redirects", function () {
     it("a non-empty string, an encoding, and a callback", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end("abc", "utf8", setCalled);
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1200,7 +1191,7 @@ describe("follow-redirects", function () {
     it("a non-empty string and a callback", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end("abc", setCalled);
         }))
         .then(asPromise(function (resolve, reject, res) {
@@ -1215,7 +1206,7 @@ describe("follow-redirects", function () {
     it("a callback", function () {
       return server.start(app)
         .then(asPromise(function (resolve) {
-          var req = http.request(opts, resolve);
+          var req = http.request("http://localhost:3600/a", { method: "POST" }, resolve);
           req.end(setCalled);
         }))
         .then(asPromise(function (resolve, reject, res) {
