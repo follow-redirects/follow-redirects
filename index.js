@@ -387,7 +387,7 @@ function urlToOptions(urlObject) {
     hash: urlObject.hash,
     search: urlObject.search,
     pathname: urlObject.pathname,
-    path: `${urlObject.pathname}${urlObject.search}`,
+    path: urlObject.pathname + urlObject.search,
     href: urlObject.href,
   };
   if (urlObject.port !== "") {
