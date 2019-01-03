@@ -3,6 +3,9 @@
   "version": "1.6.0",
   "description": "HTTP and HTTPS modules that follow redirects.",
   "main": "index.js",
+  "files": [
+    "*.js"
+  ],
   "engines": {
     "node": ">=4.0"
   },
@@ -32,12 +35,6 @@
   "contributors": [
     "Olivier Lalonde <olalonde@gmail.com> (http://www.syskall.com)",
     "James Talmage <james@talmage.io>"
-  ],
-  "files": [
-    "index.js",
-    "create.js",
-    "http.js",
-    "https.js"
   ],
   "dependencies": {
     "debug": "=3.1.0"
