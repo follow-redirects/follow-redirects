@@ -30,7 +30,6 @@ function RedirectableRequest(options, responseCallback) {
   this._redirects = [];
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
-  this._timeoutMsecs = 0;
 
   // Since http.request treats host as an alias of hostname,
   // but the url module interprets host as hostname plus port,
@@ -148,13 +147,30 @@ RedirectableRequest.prototype.removeHeader = function (name) {
   this._currentRequest.removeHeader(name);
 };
 
-// Re-bind timeout handler to all subsequent requests
+// Global timeout for all underlying requests
 RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
-  this._timeoutMsecs = msecs;
   if (callback) {
     this.once("timeout", callback);
   }
-  return this._currentRequest.setTimeout(msecs);
+
+  var self = this;
+  function startTimer() {
+    clearTimeout(self._timeout);
+    self._timeout = setTimeout(function () {
+      self.emit("timeout");
+    }, msecs);
+  }
+
+  if (!this.socket) {
+    this._currentRequest.once("socket", function () {
+      startTimer();
+    });
+  }
+  else {
+    startTimer();
+  }
+
+  return this;
 };
 
 // Proxy all other public ClientRequest methods
@@ -195,12 +211,6 @@ RedirectableRequest.prototype._performRequest = function () {
   var request = this._currentRequest =
         nativeProtocol.request(this._options, this._onNativeResponse);
   this._currentUrl = url.format(this._options);
-
-  // Rebind timeout to current request - any emitted "timeout" event will
-  // bubble up to the top level callback in RedirectableRequest#setTimeout
-  if (this._timeoutMsecs) {
-    this._currentRequest.setTimeout(this._timeoutMsecs);
-  }
 
   // Set up event handlers
   request._redirectable = this;
@@ -320,6 +330,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
     response.responseUrl = this._currentUrl;
     response.redirects = this._redirects;
     this.emit("response", response);
+
+    // Clear any timeouts
+    clearTimeout(this._timeout);
 
     // Clean up
     this._requestBodyBuffers = [];
