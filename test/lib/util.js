@@ -27,11 +27,20 @@ function concatJson(resolve, reject) {
   };
 }
 
-function delaysJson(ms, json) {
+function delaysRedirect(msecs) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return function (req, res) {
+    setTimeout(function () {
+      res.redirect.apply(res, args);
+    }, msecs);
+  };
+}
+
+function delaysJson(msecs, json) {
   return function (req, res) {
     setTimeout(function () {
       res.json(json);
-    }, ms);
+    }, msecs);
   };
 }
 
@@ -47,6 +56,7 @@ module.exports = {
   asPromise: asPromise,
   concatJson: concatJson,
   delaysJson: delaysJson,
+  delaysRedirect: delaysRedirect,
   redirectsTo: redirectsTo,
   sendsJson: sendsJson,
 };
