@@ -30,6 +30,7 @@ function RedirectableRequest(options, responseCallback) {
   this._redirects = [];
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
+  this._timeoutMsecs = 0;
 
   // Since http.request treats host as an alias of hostname,
   // but the url module interprets host as hostname plus port,
@@ -147,10 +148,19 @@ RedirectableRequest.prototype.removeHeader = function (name) {
   this._currentRequest.removeHeader(name);
 };
 
+// Re-bind timeout handler to all subsequent requests
+RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
+  this._timeoutMsecs = msecs;
+  if (callback) {
+    this.once("timeout", callback);
+  }
+  return this._currentRequest.setTimeout(msecs);
+};
+
 // Proxy all other public ClientRequest methods
 [
   "abort", "flushHeaders", "getHeader",
-  "setNoDelay", "setSocketKeepAlive", "setTimeout",
+  "setNoDelay", "setSocketKeepAlive",
 ].forEach(function (method) {
   RedirectableRequest.prototype[method] = function (a, b) {
     return this._currentRequest[method](a, b);
@@ -185,6 +195,12 @@ RedirectableRequest.prototype._performRequest = function () {
   var request = this._currentRequest =
         nativeProtocol.request(this._options, this._onNativeResponse);
   this._currentUrl = url.format(this._options);
+
+  // Rebind timeout to current request - any emitted "timeout" event will
+  // bubble up to the top level callback in RedirectableRequest#setTimeout
+  if (this._timeoutMsecs) {
+    this._currentRequest.setTimeout(this._timeoutMsecs);
+  }
 
   // Set up event handlers
   request._redirectable = this;

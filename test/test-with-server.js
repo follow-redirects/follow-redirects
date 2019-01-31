@@ -13,6 +13,7 @@ var path = require("path");
 var util = require("./lib/util");
 var concat = require("concat-stream");
 var concatJson = util.concatJson;
+var delaysJson = util.delaysJson;
 var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
@@ -233,6 +234,21 @@ describe("follow-redirects", function () {
       .then(function (socket) {
         assert(socket instanceof net.Socket, "socket event should emit with socket");
       });
+  });
+
+  it("should callback setTimeout on the returned stream", function () {
+    app.get("/redirect", redirectsTo("/timeout"));
+    app.get("/timeout", delaysJson(5000, { time: "out" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        var req = http.get("http://localhost:3600/redirect", reject);
+        req.on("error", reject);
+        req.setTimeout(10, function () {
+          req.abort();
+          resolve();
+        });
+      }));
   });
 
   it("should follow redirects over https", function () {
