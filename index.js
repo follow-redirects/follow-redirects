@@ -162,9 +162,7 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
   }
 
   if (!this.socket) {
-    this._currentRequest.once("socket", function () {
-      startTimer();
-    });
+    this._currentRequest.once("socket", startTimer);
   }
   else {
     startTimer();
