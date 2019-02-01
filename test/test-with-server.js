@@ -265,6 +265,25 @@ describe("follow-redirects", function () {
         });
     });
 
+    it("sets a timeout when the socket already exists", function () {
+      app.get("/timeout", delaysJson(clock, 5000, { timed: "out" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/timeout", function () {
+            reject(new Error("should have timed out"));
+          });
+          req.on("error", reject);
+          req.on("socket", function () {
+            assert(req.socket instanceof net.Socket);
+            req.setTimeout(3000, function () {
+              req.abort();
+              resolve();
+            });
+          });
+        }));
+    });
+
     it("should timeout on the final request", function () {
       app.get("/redirect1", redirectsTo("/redirect2"));
       app.get("/redirect2", redirectsTo("/timeout"));
