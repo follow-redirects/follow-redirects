@@ -27,20 +27,18 @@ function concatJson(resolve, reject) {
   };
 }
 
-function delaysRedirect(msecs) {
-  var args = Array.prototype.slice.call(arguments, 1);
+function delaysRedirect(clock, msecs) {
+  var args = Array.prototype.slice.call(arguments, 2);
   return function (req, res) {
-    setTimeout(function () {
-      res.redirect.apply(res, args);
-    }, msecs);
+    clock.tick(msecs);
+    res.redirect.apply(res, args);
   };
 }
 
-function delaysJson(msecs, json) {
+function delaysJson(clock, msecs, json) {
   return function (req, res) {
-    setTimeout(function () {
-      res.json(json);
-    }, msecs);
+    clock.tick(msecs);
+    res.json(json);
   };
 }
 

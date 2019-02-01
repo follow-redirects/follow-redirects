@@ -9,6 +9,7 @@ var http = followRedirects.http;
 var https = followRedirects.https;
 var fs = require("fs");
 var path = require("path");
+var lolex = require("lolex");
 
 var util = require("./lib/util");
 var concat = require("concat-stream");
@@ -238,11 +239,17 @@ describe("follow-redirects", function () {
   });
 
   describe("should callback setTimeout after redirect", function () {
-    this.timeout(10000);
+    var clock;
+    beforeEach(function () {
+      clock = lolex.install();
+    });
+    afterEach(function () {
+      clock.uninstall();
+    });
 
     it("clears timeouts after a successful response", function () {
       app.get("/redirect", redirectsTo("/timeout"));
-      app.get("/timeout", delaysJson(2000, { didnot: "timeout" }));
+      app.get("/timeout", delaysJson(clock, 2000, { didnot: "timeout" }));
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
@@ -261,7 +268,7 @@ describe("follow-redirects", function () {
     it("should timeout on the final request", function () {
       app.get("/redirect1", redirectsTo("/redirect2"));
       app.get("/redirect2", redirectsTo("/timeout"));
-      app.get("/timeout", delaysJson(5000, { timed: "out" }));
+      app.get("/timeout", delaysJson(clock, 5000, { timed: "out" }));
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
@@ -277,10 +284,10 @@ describe("follow-redirects", function () {
     });
 
     it("should include redirect delays in the timeout", function () {
-      app.get("/redirect1", delaysRedirect(1000, "/redirect2"));
-      app.get("/redirect2", delaysRedirect(1000, "/redirect3"));
-      app.get("/redirect3", delaysRedirect(1000, "/timeout"));
-      app.get("/timeout", delaysJson(1000, { timed: "out" }));
+      app.get("/redirect1", delaysRedirect(clock, 1000, "/redirect2"));
+      app.get("/redirect2", delaysRedirect(clock, 1000, "/redirect3"));
+      app.get("/redirect3", delaysRedirect(clock, 1000, "/timeout"));
+      app.get("/timeout", delaysJson(clock, 1000, { timed: "out" }));
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
@@ -297,7 +304,7 @@ describe("follow-redirects", function () {
 
     it("overrides existing timeouts", function () {
       app.get("/redirect", redirectsTo("/timeout"));
-      app.get("/timeout", delaysJson(5000, { timed: "out" }));
+      app.get("/timeout", delaysJson(clock, 5000, { timed: "out" }));
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
