@@ -251,9 +251,10 @@ describe("follow-redirects", function () {
       app.get("/redirect", redirectsTo("/timeout"));
       app.get("/timeout", delaysJson(clock, 2000, { didnot: "timeout" }));
 
+      var req;
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.get("http://localhost:3600/redirect", concatJson(resolve, reject));
+          req = http.get("http://localhost:3600/redirect", concatJson(resolve, reject));
           req.on("error", reject);
           req.setTimeout(3000, function () {
             reject(new Error("should not have timed out"));
@@ -262,6 +263,23 @@ describe("follow-redirects", function () {
         .then(function (res) {
           assert.deepEqual(res.parsedJson, { didnot: "timeout" });
           assert.deepEqual(res.responseUrl, "http://localhost:3600/timeout");
+          assert.equal(req._timeout, null);
+        });
+    });
+
+    it("clears timeouts after an error response", function () {
+      app.get("/redirect", redirectsTo("http://localhost:3602/b"));
+
+      var req;
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          req = http.get("http://localhost:3600/redirect", reject);
+          req.setTimeout(3000, reject);
+          req.on("error", resolve);
+        }))
+        .then(function (err) {
+          assert.equal(err.code, "ECONNREFUSED");
+          assert.equal(req._timeout, null);
         });
     });
 

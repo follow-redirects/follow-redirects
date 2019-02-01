@@ -157,8 +157,13 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
   function startTimer() {
     clearTimeout(self._timeout);
     self._timeout = setTimeout(function () {
+      self._timeout = null;
       self.emit("timeout");
     }, msecs);
+  }
+  function clearTimer() {
+    clearTimeout(self._timeout);
+    self._timeout = null;
   }
 
   if (!this.socket) {
@@ -167,6 +172,9 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
   else {
     startTimer();
   }
+
+  this.once("response", clearTimer);
+  this.once("error", clearTimer);
 
   return this;
 };
@@ -328,9 +336,6 @@ RedirectableRequest.prototype._processResponse = function (response) {
     response.responseUrl = this._currentUrl;
     response.redirects = this._redirects;
     this.emit("response", response);
-
-    // Clear any timeouts
-    clearTimeout(this._timeout);
 
     // Clean up
     this._requestBodyBuffers = [];
