@@ -237,7 +237,7 @@ describe("follow-redirects", function () {
       });
   });
 
-  describe("should callback setTimeout after redirect", function () {
+  describe("setTimeout", function () {
     var clock;
     beforeEach(function () {
       clock = lolex.install();
