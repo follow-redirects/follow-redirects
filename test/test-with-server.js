@@ -257,13 +257,13 @@ describe("follow-redirects", function () {
           req = http.get("http://localhost:3600/redirect", concatJson(resolve, reject));
           req.on("error", reject);
           req.setTimeout(3000, function () {
-            reject(new Error("should not have timed out"));
+            throw new Error("should not have timed out");
           });
         }))
         .then(function (res) {
           assert.deepEqual(res.parsedJson, { didnot: "timeout" });
           assert.deepEqual(res.responseUrl, "http://localhost:3600/timeout");
-          assert.equal(req._timeout, null);
+          clock.tick(5000);
         });
     });
 
@@ -274,12 +274,14 @@ describe("follow-redirects", function () {
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
           req = http.get("http://localhost:3600/redirect", reject);
-          req.setTimeout(3000, reject);
+          req.setTimeout(3000, function () {
+            throw new Error("should not have timed out");
+          });
           req.on("error", resolve);
         }))
         .then(function (err) {
           assert.equal(err.code, "ECONNREFUSED");
-          assert.equal(req._timeout, null);
+          clock.tick(5000);
         });
     });
 
@@ -289,7 +291,7 @@ describe("follow-redirects", function () {
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.get("http://localhost:3600/timeout", function () {
-            reject(new Error("should have timed out"));
+            throw new Error("should have timed out");
           });
           req.on("error", reject);
           req.on("socket", function () {
@@ -310,7 +312,7 @@ describe("follow-redirects", function () {
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.get("http://localhost:3600/redirect1", function () {
-            reject(new Error("should have timed out"));
+            throw new Error("should have timed out");
           });
           req.on("error", reject);
           req.setTimeout(1000, function () {
@@ -329,7 +331,7 @@ describe("follow-redirects", function () {
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.get("http://localhost:3600/redirect1", function () {
-            reject(new Error("should have timed out"));
+            throw new Error("should have timed out");
           });
           req.on("error", reject);
           req.setTimeout(2000, function () {
@@ -346,7 +348,7 @@ describe("follow-redirects", function () {
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
           var req = http.get("http://localhost:3600/redirect", function () {
-            reject(new Error("should have timed out"));
+            throw new Error("should have timed out");
           });
           req.on("error", reject);
 
