@@ -153,24 +153,14 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
     this.once("timeout", callback);
   }
 
-  var self = this;
-  function startTimer() {
-    clearTimeout(self._timeout);
-    self._timeout = setTimeout(function () {
-      self._timeout = null;
-      self.emit("timeout");
-    }, msecs);
-  }
-  function clearTimer() {
-    clearTimeout(self._timeout);
-    self._timeout = null;
-  }
-
-  if (!this.socket) {
-    this._currentRequest.once("socket", startTimer);
+  if (this.socket) {
+    startTimer(this, msecs);
   }
   else {
-    startTimer();
+    var self = this;
+    this._currentRequest.once("socket", function () {
+      startTimer(self, msecs);
+    });
   }
 
   this.once("response", clearTimer);
@@ -178,6 +168,17 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
 
   return this;
 };
+
+function startTimer(request, msecs) {
+  clearTimeout(request._timeout);
+  request._timeout = setTimeout(function () {
+    request.emit("timeout");
+  }, msecs);
+}
+
+function clearTimer() {
+  clearTimeout(this._timeout);
+}
 
 // Proxy all other public ClientRequest methods
 [
