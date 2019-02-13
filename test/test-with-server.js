@@ -9,10 +9,12 @@ var http = followRedirects.http;
 var https = followRedirects.https;
 var fs = require("fs");
 var path = require("path");
+var lolex = require("lolex");
 
 var util = require("./lib/util");
 var concat = require("concat-stream");
 var concatJson = util.concatJson;
+var delay = util.delay;
 var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
@@ -233,6 +235,134 @@ describe("follow-redirects", function () {
       .then(function (socket) {
         assert(socket instanceof net.Socket, "socket event should emit with socket");
       });
+  });
+
+  describe("setTimeout", function () {
+    var clock;
+    beforeEach(function () {
+      clock = lolex.install();
+    });
+    afterEach(function () {
+      clock.uninstall();
+    });
+
+    it("clears timeouts after a successful response", function () {
+      app.get("/redirect", redirectsTo("/timeout"));
+      app.get("/timeout", delay(clock, 2000, sendsJson({ didnot: "timeout" })));
+
+      var req;
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          req = http.get("http://localhost:3600/redirect", concatJson(resolve, reject));
+          req.on("error", reject);
+          req.setTimeout(3000, function () {
+            throw new Error("should not have timed out");
+          });
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { didnot: "timeout" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/timeout");
+          clock.tick(5000);
+        });
+    });
+
+    it("clears timeouts after an error response", function () {
+      app.get("/redirect", redirectsTo("http://localhost:3602/b"));
+
+      var req;
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          req = http.get("http://localhost:3600/redirect", reject);
+          req.setTimeout(3000, function () {
+            throw new Error("should not have timed out");
+          });
+          req.on("error", resolve);
+        }))
+        .then(function (err) {
+          assert.equal(err.code, "ECONNREFUSED");
+          clock.tick(5000);
+        });
+    });
+
+    it("sets a timeout when the socket already exists", function () {
+      app.get("/timeout", delay(clock, 5000, sendsJson({ timed: "out" })));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/timeout", function () {
+            throw new Error("should have timed out");
+          });
+          req.on("error", reject);
+          req.on("socket", function () {
+            assert(req.socket instanceof net.Socket);
+            req.setTimeout(3000, function () {
+              req.abort();
+              resolve();
+            });
+          });
+        }));
+    });
+
+    it("should timeout on the final request", function () {
+      app.get("/redirect1", redirectsTo("/redirect2"));
+      app.get("/redirect2", redirectsTo("/timeout"));
+      app.get("/timeout", delay(clock, 5000, sendsJson({ timed: "out" })));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/redirect1", function () {
+            throw new Error("should have timed out");
+          });
+          req.on("error", reject);
+          req.setTimeout(1000, function () {
+            req.abort();
+            resolve();
+          });
+        }));
+    });
+
+    it("should include redirect delays in the timeout", function () {
+      app.get("/redirect1", delay(clock, 1000, redirectsTo("/redirect2")));
+      app.get("/redirect2", delay(clock, 1000, redirectsTo("/redirect3")));
+      app.get("/redirect3", delay(clock, 1000, "/timeout"));
+      app.get("/timeout", delay(clock, 1000, sendsJson({ timed: "out" })));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/redirect1", function () {
+            throw new Error("should have timed out");
+          });
+          req.on("error", reject);
+          req.setTimeout(2000, function () {
+            req.abort();
+            resolve();
+          });
+        }));
+    });
+
+    it("overrides existing timeouts", function () {
+      app.get("/redirect", redirectsTo("/timeout"));
+      app.get("/timeout", delay(clock, 5000, sendsJson({ timed: "out" })));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/redirect", function () {
+            throw new Error("should have timed out");
+          });
+          req.on("error", reject);
+
+          var callbacks = 0;
+          function timeoutCallback() {
+            if (++callbacks === 3) {
+              req.abort();
+              resolve(callbacks);
+            }
+          }
+          req.setTimeout(10000, timeoutCallback);
+          req.setTimeout(10000, timeoutCallback);
+          req.setTimeout(1000, timeoutCallback);
+        }));
+    });
   });
 
   it("should follow redirects over https", function () {

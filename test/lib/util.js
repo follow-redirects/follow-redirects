@@ -27,6 +27,13 @@ function concatJson(resolve, reject) {
   };
 }
 
+function delay(clock, msecs, handler) {
+  return function (req, res) {
+    clock.tick(msecs);
+    handler(req, res);
+  };
+}
+
 function asPromise(cb) {
   return function (result) {
     return new Promise(function (resolve, reject) {
@@ -38,6 +45,7 @@ function asPromise(cb) {
 module.exports = {
   asPromise: asPromise,
   concatJson: concatJson,
+  delay: delay,
   redirectsTo: redirectsTo,
   sendsJson: sendsJson,
 };
