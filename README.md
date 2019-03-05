@@ -1,6 +1,6 @@
 ## Follow Redirects
 
-Drop-in replacement for Nodes `http` and `https` that automatically follows redirects.
+Drop-in replacement for Node's `http` and `https` modules that automatically follows redirects.
 
 [![npm version](https://img.shields.io/npm/v/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
 [![Build Status](https://travis-ci.org/follow-redirects/follow-redirects.svg?branch=master)](https://travis-ci.org/follow-redirects/follow-redirects)
