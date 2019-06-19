@@ -12,11 +12,6 @@ var SAFE_METHODS = { GET: true, HEAD: true, OPTIONS: true, TRACE: true };
 
 // Create handlers that pass events from native requests
 var eventHandlers = Object.create(null);
-["abort", "aborted", "error", "socket", "timeout"].forEach(function (event) {
-  eventHandlers[event] = function (arg) {
-    this._redirectable.emit(event, arg);
-  };
-});
 
 // An HTTP(S) request that can be redirected
 function RedirectableRequest(options, responseCallback) {
@@ -63,6 +58,12 @@ function RedirectableRequest(options, responseCallback) {
       options.pathname = options.path.substring(0, searchPos);
       options.search = options.path.substring(searchPos);
     }
+
+    ["abort", "aborted", "error", "socket", "timeout"].forEach(function (event) {
+      eventHandlers[event] = function (arg) {
+        self.emit(event, arg);
+      };
+    });
   }
 
   // Perform the first request
