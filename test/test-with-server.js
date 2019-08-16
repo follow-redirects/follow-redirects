@@ -1348,6 +1348,108 @@ describe("follow-redirects", function () {
         });
     });
   });
+
+  describe("transform request options", function () {
+    it("don't call transform function", function () {
+      app.get("/a", sendsJson({ a: "b" }));
+      var callsToTransform = 0;
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            transformOptions: function () {
+              callsToTransform++;
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.strictEqual(callsToTransform, 0);
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+        });
+    });
+    it("recover, if transform function is null", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", sendsJson({ a: "b" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            transformOptions: null,
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+        });
+    });
+    it("recover, if transform function is undefined", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", sendsJson({ a: "b" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            transformOptions: undefined,
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+        });
+    });
+    it("transform on both redirects", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", function (req, res) {
+        res.json(req.headers);
+      });
+      var callsToTransform = 0;
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            transformOptions: function (optionz) {
+              callsToTransform++;
+              if (optionz.path === "/b") {
+                optionz.headers["header-a"] = "value A";
+              }
+              else if (optionz.path === "/c") {
+                optionz.headers["header-b"] = "value B";
+              }
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.strictEqual(callsToTransform, 2);
+          assert.strictEqual(res.parsedJson["header-a"], "value A");
+          assert.strictEqual(res.parsedJson["header-b"], "value B");
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+        });
+    });
+  });
 });
 
 function noop() { /* noop */ }
