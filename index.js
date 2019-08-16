@@ -18,6 +18,31 @@ var eventHandlers = Object.create(null);
   };
 });
 
+function cleanupOptions(options) {
+  // Since http.request treats host as an alias of hostname,
+  // but the url module interprets host as hostname plus port,
+  // eliminate the host property to avoid confusion.
+  if (options.host) {
+    // Use hostname if set, because it has precedence
+    if (!options.hostname) {
+      options.hostname = options.host;
+    }
+    delete options.host;
+  }
+
+  // Complete the URL object when necessary
+  if (!options.pathname && options.path) {
+    var searchPos = options.path.indexOf("?");
+    if (searchPos < 0) {
+      options.pathname = options.path;
+    }
+    else {
+      options.pathname = options.path.substring(0, searchPos);
+      options.search = options.path.substring(searchPos);
+    }
+  }
+}
+
 // An HTTP(S) request that can be redirected
 function RedirectableRequest(options, responseCallback) {
   // Initialize the request
@@ -31,16 +56,7 @@ function RedirectableRequest(options, responseCallback) {
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
 
-  // Since http.request treats host as an alias of hostname,
-  // but the url module interprets host as hostname plus port,
-  // eliminate the host property to avoid confusion.
-  if (options.host) {
-    // Use hostname if set, because it has precedence
-    if (!options.hostname) {
-      options.hostname = options.host;
-    }
-    delete options.host;
-  }
+  cleanupOptions(options);
 
   // Attach a callback if passed
   if (responseCallback) {
@@ -52,18 +68,6 @@ function RedirectableRequest(options, responseCallback) {
   this._onNativeResponse = function (response) {
     self._processResponse(response);
   };
-
-  // Complete the URL object when necessary
-  if (!options.pathname && options.path) {
-    var searchPos = options.path.indexOf("?");
-    if (searchPos < 0) {
-      options.pathname = options.path;
-    }
-    else {
-      options.pathname = options.path.substring(0, searchPos);
-      options.search = options.path.substring(searchPos);
-    }
-  }
 
   // Perform the first request
   this._performRequest();
@@ -326,6 +330,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var redirectUrl = url.resolve(this._currentUrl, location);
     debug("redirecting to", redirectUrl);
     Object.assign(this._options, url.parse(redirectUrl));
+    if (typeof this._options.transformOptions === "function") {
+      this._options.transformOptions.apply(null, [this._options]);
+      cleanupOptions(this._options);
+    }
     this._isRedirect = true;
     this._performRequest();
 
@@ -349,6 +357,7 @@ function wrap(protocols) {
   var exports = {
     maxRedirects: 21,
     maxBodyLength: 10 * 1024 * 1024,
+    transformOptions: noop,
   };
 
   // Wrap each protocol
@@ -388,6 +397,7 @@ function wrap(protocols) {
       options = Object.assign({
         maxRedirects: exports.maxRedirects,
         maxBodyLength: exports.maxBodyLength,
+        transformOptions: exports.transformOptions,
       }, input, options);
       options.nativeProtocols = nativeProtocols;
 
