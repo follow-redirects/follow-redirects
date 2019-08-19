@@ -402,7 +402,6 @@ function wrap(protocols) {
       options = Object.assign({
         maxRedirects: exports.maxRedirects,
         maxBodyLength: exports.maxBodyLength,
-        beforeRedirect: exports.beforeRedirect,
       }, input, options);
       options.nativeProtocols = nativeProtocols;
 
