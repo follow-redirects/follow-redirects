@@ -45,7 +45,7 @@ Global options are set directly on the `follow-redirects` module:
 var followRedirects = require('follow-redirects');
 followRedirects.maxRedirects = 10;
 followRedirects.maxBodyLength = 20 * 1024 * 1024; // 20 MB
-followRedirects.transformOptions = function (options) {
+followRedirects.beforeRedirect = function (options) {
   // this function is called on every redirect
   if(options.hostname === "www.google.com") {
     options.headers["special-header"] = "special value";
@@ -59,7 +59,7 @@ The following global options are supported:
 
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
 - 
-- `transformOptions` (default: no operation) – optionally change request `options`; this function is called on every redirect.
+- `beforeRedirect` (default: no operation) – optionally change request `options`; this function is called on every redirect.
 
 
 ### Per-request options
@@ -82,7 +82,7 @@ the following per-request options are supported:
 
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
 - 
-- `transformOptions` (default: no operation) – optionally change request `options`; this function is called on every redirect.
+- `beforeRedirect` (default: no operation) – optionally change request `options`; this function is called on every redirect.
 
 - `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
 

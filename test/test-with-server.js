@@ -1361,7 +1361,7 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            transformOptions: function () {
+            beforeRedirect: function () {
               callsToTransform++;
             },
           };
@@ -1385,7 +1385,7 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            transformOptions: null,
+            beforeRedirect: null,
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
         }))
@@ -1406,7 +1406,7 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            transformOptions: undefined,
+            beforeRedirect: undefined,
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
         }))
@@ -1430,7 +1430,7 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            transformOptions: function (optionz) {
+            beforeRedirect: function (optionz) {
               callsToTransform++;
               if (optionz.path === "/b") {
                 optionz.headers["header-a"] = "value A";

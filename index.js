@@ -330,8 +330,8 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var redirectUrl = url.resolve(this._currentUrl, location);
     debug("redirecting to", redirectUrl);
     Object.assign(this._options, url.parse(redirectUrl));
-    if (typeof this._options.transformOptions === "function") {
-      this._options.transformOptions.apply(null, [this._options]);
+    if (typeof this._options.beforeRedirect === "function") {
+      this._options.beforeRedirect.apply(null, [this._options]);
       cleanupOptions(this._options);
     }
     this._isRedirect = true;
@@ -357,7 +357,7 @@ function wrap(protocols) {
   var exports = {
     maxRedirects: 21,
     maxBodyLength: 10 * 1024 * 1024,
-    transformOptions: noop,
+    beforeRedirect: noop,
   };
 
   // Wrap each protocol
@@ -397,7 +397,7 @@ function wrap(protocols) {
       options = Object.assign({
         maxRedirects: exports.maxRedirects,
         maxBodyLength: exports.maxBodyLength,
-        transformOptions: exports.transformOptions,
+        beforeRedirect: exports.beforeRedirect,
       }, input, options);
       options.nativeProtocols = nativeProtocols;
 
