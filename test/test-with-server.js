@@ -1349,7 +1349,7 @@ describe("follow-redirects", function () {
     });
   });
 
-  describe("transform request options", function () {
+  describe("change request options before redirects", function () {
     it("don't call transform function", function () {
       app.get("/a", sendsJson({ a: "b" }));
       var callsToTransform = 0;
@@ -1396,7 +1396,7 @@ describe("follow-redirects", function () {
         });
     });
 
-    it("transform on both redirects", function () {
+    it("append new header with every redirect", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
       app.get("/c", function (req, res) {
