@@ -1374,7 +1374,7 @@ describe("follow-redirects", function () {
         });
     });
 
-    it("recover, if transform function is null", function () {
+    it("ignore beforeRedirect if not a function", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
       app.get("/c", sendsJson({ a: "b" }));
@@ -1386,29 +1386,7 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            beforeRedirect: null,
-          };
-          http.get(options, concatJson(resolve, reject)).on("error", reject);
-        }))
-        .then(function (res) {
-          assert.deepEqual(res.parsedJson, { a: "b" });
-          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
-        });
-    });
-
-    it("recover, if transform function is undefined", function () {
-      app.get("/a", redirectsTo("/b"));
-      app.get("/b", redirectsTo("/c"));
-      app.get("/c", sendsJson({ a: "b" }));
-
-      return server.start(app)
-        .then(asPromise(function (resolve, reject) {
-          var options = {
-            host: "localhost",
-            port: 3600,
-            path: "/a",
-            method: "GET",
-            beforeRedirect: undefined,
+            beforeRedirect: 42,
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
         }))
