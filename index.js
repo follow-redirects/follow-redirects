@@ -357,7 +357,6 @@ function wrap(protocols) {
   var exports = {
     maxRedirects: 21,
     maxBodyLength: 10 * 1024 * 1024,
-    beforeRedirect: noop,
   };
 
   // Wrap each protocol
