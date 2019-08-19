@@ -1373,6 +1373,7 @@ describe("follow-redirects", function () {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
         });
     });
+
     it("recover, if transform function is null", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
@@ -1394,6 +1395,7 @@ describe("follow-redirects", function () {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
         });
     });
+
     it("recover, if transform function is undefined", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
@@ -1415,6 +1417,7 @@ describe("follow-redirects", function () {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
         });
     });
+
     it("transform on both redirects", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
