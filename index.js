@@ -331,8 +331,13 @@ RedirectableRequest.prototype._processResponse = function (response) {
     debug("redirecting to", redirectUrl);
     Object.assign(this._options, url.parse(redirectUrl));
     if (typeof this._options.beforeRedirect === "function") {
-      this._options.beforeRedirect.apply(null, [this._options]);
-      cleanupOptions(this._options);
+      try {
+        this._options.beforeRedirect.apply(null, [this._options]);
+        cleanupOptions(this._options);
+      }
+      catch (err) {
+        this.emit("error", err);
+      }
     }
     this._isRedirect = true;
     this._performRequest();

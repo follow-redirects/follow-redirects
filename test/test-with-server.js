@@ -1430,6 +1430,35 @@ describe("follow-redirects", function () {
           assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
         });
     });
+
+    it("abort request chain after throwing an error", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", function (req, res) {
+        res.json(req.headers);
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function () {
+              throw new Error("no redirects!");
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function () {
+          assert.fail("request chain should have been aborted");
+        })
+        .catch(function (err) {
+          assert(err instanceof Error);
+          assert.equal(err.message, "no redirects!");
+        });
+    });
   });
 });
 
