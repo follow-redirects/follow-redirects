@@ -18,31 +18,6 @@ var eventHandlers = Object.create(null);
   };
 });
 
-function cleanupOptions(options) {
-  // Since http.request treats host as an alias of hostname,
-  // but the url module interprets host as hostname plus port,
-  // eliminate the host property to avoid confusion.
-  if (options.host) {
-    // Use hostname if set, because it has precedence
-    if (!options.hostname) {
-      options.hostname = options.host;
-    }
-    delete options.host;
-  }
-
-  // Complete the URL object when necessary
-  if (!options.pathname && options.path) {
-    var searchPos = options.path.indexOf("?");
-    if (searchPos < 0) {
-      options.pathname = options.path;
-    }
-    else {
-      options.pathname = options.path.substring(0, searchPos);
-      options.search = options.path.substring(searchPos);
-    }
-  }
-}
-
 // An HTTP(S) request that can be redirected
 function RedirectableRequest(options, responseCallback) {
   // Initialize the request
@@ -56,7 +31,7 @@ function RedirectableRequest(options, responseCallback) {
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
 
-  cleanupOptions(options);
+  this._sanitizeOptions(options);
 
   // Attach a callback if passed
   if (responseCallback) {
@@ -201,6 +176,32 @@ function clearTimer() {
   });
 });
 
+RedirectableRequest.prototype._sanitizeOptions = function (options) {
+  // Since http.request treats host as an alias of hostname,
+  // but the url module interprets host as hostname plus port,
+  // eliminate the host property to avoid confusion.
+  if (options.host) {
+    // Use hostname if set, because it has precedence
+    if (!options.hostname) {
+      options.hostname = options.host;
+    }
+    delete options.host;
+  }
+
+  // Complete the URL object when necessary
+  if (!options.pathname && options.path) {
+    var searchPos = options.path.indexOf("?");
+    if (searchPos < 0) {
+      options.pathname = options.path;
+    }
+    else {
+      options.pathname = options.path.substring(0, searchPos);
+      options.search = options.path.substring(searchPos);
+    }
+  }
+};
+
+
 // Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
   // Load the native protocol
@@ -333,7 +334,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     if (typeof this._options.beforeRedirect === "function") {
       try {
         this._options.beforeRedirect.apply(null, [this._options]);
-        cleanupOptions(this._options);
+        this._sanitizeOptions(this._options);
       }
       catch (err) {
         this.emit("error", err);
