@@ -333,7 +333,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     Object.assign(this._options, url.parse(redirectUrl));
     if (typeof this._options.beforeRedirect === "function") {
       try {
-        this._options.beforeRedirect.apply(null, [this._options]);
+        this._options.beforeRedirect.call(null, this._options);
         this._sanitizeOptions(this._options);
       }
       catch (err) {
