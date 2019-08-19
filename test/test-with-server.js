@@ -1350,9 +1350,8 @@ describe("follow-redirects", function () {
   });
 
   describe("change request options before redirects", function () {
-    it("don't call transform function", function () {
+    it("only call beforeRedirect on redirects, not the inital http call", function () {
       app.get("/a", sendsJson({ a: "b" }));
-      var callsToTransform = 0;
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
@@ -1362,13 +1361,12 @@ describe("follow-redirects", function () {
             path: "/a",
             method: "GET",
             beforeRedirect: function () {
-              callsToTransform++;
+              assert.fail("this should only be called on redirects");
             },
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
         }))
         .then(function (res) {
-          assert.strictEqual(callsToTransform, 0);
           assert.deepEqual(res.parsedJson, { a: "b" });
           assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
         });
