@@ -48,8 +48,8 @@ followRedirects.maxBodyLength = 20 * 1024 * 1024; // 20 MB
 followRedirects.beforeRedirect = function (options) {
   // Use this function to adjust the options upon redirecting,
   // or to cancel the request by throwing an error
-  if (options.hostname === "www.google.com") {
-    options.headers["special-header"] = "special value";
+  if (options.hostname === "example.com") {
+    options.auth = "user:password";
   }
 };
 ```
