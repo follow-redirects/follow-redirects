@@ -1,7 +1,7 @@
 var express = require("express");
 var assert = require("assert");
 var net = require("net");
-var server = require("./lib/test-server")({ https: 3601, http: 3600 });
+var server = require("./server")({ https: 3601, http: 3600 });
 var url = require("url");
 var URL = url.URL;
 var followRedirects = require("..");
@@ -11,7 +11,7 @@ var fs = require("fs");
 var path = require("path");
 var lolex = require("lolex");
 
-var util = require("./lib/util");
+var util = require("./util");
 var concat = require("concat-stream");
 var concatJson = util.concatJson;
 var delay = util.delay;
@@ -19,7 +19,7 @@ var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
 
-var testFile = path.resolve(__dirname, "input.txt");
+var testFile = path.resolve(__dirname, "assets/input.txt");
 var testFileBuffer = fs.readFileSync(testFile);
 var testFileString = testFileBuffer.toString();
 
@@ -28,11 +28,11 @@ describe("follow-redirects", function () {
     return {
       app: app,
       protocol: "https",
-      cert: fs.readFileSync(path.join(__dirname, "lib/TestServer.crt")),
-      key: fs.readFileSync(path.join(__dirname, "lib/TestServer.pem")),
+      cert: fs.readFileSync(path.resolve(__dirname, "assets/TestServer.crt")),
+      key: fs.readFileSync(path.resolve(__dirname, "assets/TestServer.pem")),
     };
   }
-  var ca = fs.readFileSync(path.join(__dirname, "lib/TestCA.crt"));
+  var ca = fs.readFileSync(path.resolve(__dirname, "assets/TestCA.crt"));
 
   var app;
   var app2;
