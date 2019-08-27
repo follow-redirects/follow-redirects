@@ -1348,6 +1348,118 @@ describe("follow-redirects", function () {
         });
     });
   });
+
+  describe("change request options before redirects", function () {
+    it("only call beforeRedirect on redirects, not the inital http call", function () {
+      app.get("/a", sendsJson({ a: "b" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function () {
+              assert.fail("this should only be called on redirects");
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/a");
+        });
+    });
+
+    it("ignore beforeRedirect if not a function", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", sendsJson({ a: "b" }));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: 42,
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+        });
+    });
+
+    it("append new header with every redirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", function (req, res) {
+        res.json(req.headers);
+      });
+      var callsToTransform = 0;
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function (optionz) {
+              callsToTransform++;
+              if (optionz.path === "/b") {
+                optionz.headers["header-a"] = "value A";
+              }
+              else if (optionz.path === "/c") {
+                optionz.headers["header-b"] = "value B";
+              }
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.strictEqual(callsToTransform, 2);
+          assert.strictEqual(res.parsedJson["header-a"], "value A");
+          assert.strictEqual(res.parsedJson["header-b"], "value B");
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+        });
+    });
+
+    it("abort request chain after throwing an error", function () {
+      var redirected = false;
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function () {
+        redirected = true;
+        throw new Error("redirected request should have been aborted");
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function () {
+              throw new Error("no redirects!");
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function () {
+          assert.fail("request chain should have been aborted");
+        })
+        .catch(function (err) {
+          assert(!redirected);
+          assert(err instanceof Error);
+          assert.equal(err.message, "no redirects!");
+        });
+    });
+  });
 });
 
 function noop() { /* noop */ }
