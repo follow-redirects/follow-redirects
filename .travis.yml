@@ -2,6 +2,7 @@ language: node_js
 sudo: false
 
 node_js:
+  - '4'
   - '6.0'
   - '6'
   - '7'
@@ -16,8 +17,20 @@ node_js:
   - 'lts/*'
   - 'node'
 
+before_script:
+  - if [ "$TRAVIS_NODE_VERSION" == 4 ]; then
+      npm install mocha@5.0.0 eslint@4.19.1 nyc@11.8.0;
+    fi
+
+script:
+  - npm run mocha
+
 after_script:
-  - cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+  - if [ "$TRAVIS_NODE_VERSION" == 12 ]; then
+      npm install --no-save coveralls;
+      node_modules/.bin/nyc --reporter=text-lcov node_modules/.bin/mocha |
+        node_modules/.bin/coveralls;
+    fi
 
 cache:
   directories:

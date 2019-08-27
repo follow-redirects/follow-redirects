@@ -2,12 +2,13 @@
   "name": "follow-redirects",
   "version": "1.8.0",
   "description": "HTTP and HTTPS modules that follow redirects.",
+  "license": "MIT",
   "main": "index.js",
   "files": [
     "*.js"
   ],
   "engines": {
-    "node": ">=6.0"
+    "node": ">=4.0"
   },
   "scripts": {
     "test": "npm run lint && npm run mocha",
@@ -37,22 +38,14 @@
     "James Talmage <james@talmage.io>"
   ],
   "dependencies": {
-    "debug": "^4.1.1"
+    "debug": "^3.0.0"
   },
   "devDependencies": {
     "concat-stream": "^2.0.0",
-    "coveralls": "^3.0.3",
     "eslint": "^5.16.0",
     "express": "^4.16.4",
     "lolex": "^3.1.0",
     "mocha": "^6.0.2",
     "nyc": "^14.1.1"
-  },
-  "license": "MIT",
-  "nyc": {
-    "reporter": [
-      "lcov",
-      "text"
-    ]
   }
 }
