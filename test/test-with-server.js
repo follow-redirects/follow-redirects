@@ -1430,10 +1430,11 @@ describe("follow-redirects", function () {
     });
 
     it("abort request chain after throwing an error", function () {
+      var redirected = false;
       app.get("/a", redirectsTo("/b"));
-      app.get("/b", redirectsTo("/c"));
-      app.get("/c", function (req, res) {
-        res.json(req.headers);
+      app.get("/b", function () {
+        redirected = true;
+        throw new Error("redirected request should have been aborted");
       });
 
       return server.start(app)
@@ -1453,6 +1454,7 @@ describe("follow-redirects", function () {
           assert.fail("request chain should have been aborted");
         })
         .catch(function (err) {
+          assert(!redirected);
           assert(err instanceof Error);
           assert.equal(err.message, "no redirects!");
         });

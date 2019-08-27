@@ -22,7 +22,7 @@ var eventHandlers = Object.create(null);
 function RedirectableRequest(options, responseCallback) {
   // Initialize the request
   Writable.call(this);
-  options.headers = options.headers || {};
+  this._sanitizeOptions(options);
   this._options = options;
   this._ended = false;
   this._ending = false;
@@ -30,8 +30,6 @@ function RedirectableRequest(options, responseCallback) {
   this._redirects = [];
   this._requestBodyLength = 0;
   this._requestBodyBuffers = [];
-
-  this._sanitizeOptions(options);
 
   // Attach a callback if passed
   if (responseCallback) {
@@ -177,6 +175,11 @@ function clearTimer() {
 });
 
 RedirectableRequest.prototype._sanitizeOptions = function (options) {
+  // Ensure headers are always present
+  if (!options.headers) {
+    options.headers = {};
+  }
+
   // Since http.request treats host as an alias of hostname,
   // but the url module interprets host as hostname plus port,
   // eliminate the host property to avoid confusion.
@@ -269,11 +272,12 @@ RedirectableRequest.prototype._performRequest = function () {
 // Processes a response from the current native request
 RedirectableRequest.prototype._processResponse = function (response) {
   // Store the redirected response
+  var statusCode = response.statusCode;
   if (this._options.trackRedirects) {
     this._redirects.push({
       url: this._currentUrl,
       headers: response.headers,
-      statusCode: response.statusCode,
+      statusCode: statusCode,
     });
   }
 
@@ -285,11 +289,13 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // even if the specific status code is not understood.
   var location = response.headers.location;
   if (location && this._options.followRedirects !== false &&
-      response.statusCode >= 300 && response.statusCode < 400) {
+      statusCode >= 300 && statusCode < 400) {
     // Abort the current request
     this._currentRequest.removeAllListeners();
     this._currentRequest.on("error", noop);
     this._currentRequest.abort();
+    // Discard the remainder of the response to avoid waiting for data
+    response.destroy();
 
     // RFC7231§6.4: A client SHOULD detect and intervene
     // in cyclical redirections (i.e., "infinite" redirection loops).
@@ -307,7 +313,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     // if it performs an automatic redirection to that URI.
     var header;
     var headers = this._options.headers;
-    if (response.statusCode !== 307 && !(this._options.method in SAFE_METHODS)) {
+    if (statusCode !== 307 && !(this._options.method in SAFE_METHODS)) {
       this._options.method = "GET";
       // Drop a possible entity and headers related to it
       this._requestBodyBuffers = [];
@@ -334,17 +340,15 @@ RedirectableRequest.prototype._processResponse = function (response) {
     if (typeof this._options.beforeRedirect === "function") {
       try {
         this._options.beforeRedirect.call(null, this._options);
-        this._sanitizeOptions(this._options);
       }
       catch (err) {
         this.emit("error", err);
+        return;
       }
+      this._sanitizeOptions(this._options);
     }
     this._isRedirect = true;
     this._performRequest();
-
-    // Discard the remainder of the response to avoid waiting for data
-    response.destroy();
   }
   else {
     // The response is not a redirect; return it as-is

@@ -59,9 +59,6 @@ The following global options are supported:
 - `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
 
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
-- 
-- `beforeRedirect` (default: `undefined`) – optionally change request `options` or cancel the request; this function is called on every redirect.
-
 
 ### Per-request options
 Per-request options are set by passing an `options` object:
@@ -83,7 +80,7 @@ the following per-request options are supported:
 
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
 
-- `beforeRedirect` (default: `undefined`) – optionally change request `options` or cancel the request; this function is called on every redirect.
+- `beforeRedirect` (default: `undefined`) – optionally change the request `options` on redirects, or abort the request by throwing an error.
 
 - `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
 
