@@ -12,14 +12,13 @@ Drop-in replacement for Node's `http` and `https` modules that automatically fol
  modules, with the exception that they will seamlessly follow redirects.
 
 ```javascript
-var http = require('follow-redirects').http;
-var https = require('follow-redirects').https;
+const { http, https } = require('follow-redirects');
 
-http.get('http://bit.ly/900913', function (response) {
-  response.on('data', function (chunk) {
+http.get('http://bit.ly/900913', response => {
+  response.on('data', chunk => {
     console.log(chunk);
   });
-}).on('error', function (err) {
+}).on('error', err => {
   console.error(err);
 });
 ```
@@ -31,7 +30,7 @@ If no redirection happened, `responseUrl` is the original request URL.
 https.request({
   host: 'bitly.com',
   path: '/UHfDGO',
-}, function (response) {
+}, response => {
   console.log(response.responseUrl);
   // 'http://duckduckgo.com/robots.txt'
 });
@@ -42,16 +41,9 @@ https.request({
 Global options are set directly on the `follow-redirects` module:
 
 ```javascript
-var followRedirects = require('follow-redirects');
+const followRedirects = require('follow-redirects');
 followRedirects.maxRedirects = 10;
 followRedirects.maxBodyLength = 20 * 1024 * 1024; // 20 MB
-followRedirects.beforeRedirect = function (options) {
-  // Use this function to adjust the options upon redirecting,
-  // or to cancel the request by throwing an error
-  if (options.hostname === "example.com") {
-    options.auth = "user:password";
-  }
-};
 ```
 
 The following global options are supported:
@@ -64,11 +56,18 @@ The following global options are supported:
 Per-request options are set by passing an `options` object:
 
 ```javascript
-var url = require('url');
-var followRedirects = require('follow-redirects');
+const url = require('url');
+const { http, https } = require('follow-redirects');
 
-var options = url.parse('http://bit.ly/900913');
+const options = url.parse('http://bit.ly/900913');
 options.maxRedirects = 10;
+options.beforeRedirect = options => {
+  // Use this function to adjust the options upon redirecting,
+  // or to cancel the request by throwing an error
+  if (options.hostname === "example.com") {
+    options.auth = "user:password";
+  }
+};
 http.request(options);
 ```
 
@@ -95,7 +94,7 @@ To enable features such as caching and/or intermediate request tracking,
 you might instead want to wrap `follow-redirects` around custom protocol implementations:
 
 ```javascript
-var followRedirects = require('follow-redirects').wrap({
+const { http, https } = require('follow-redirects').wrap({
   http: require('your-custom-http'),
   https: require('your-custom-https'),
 });
@@ -110,8 +109,8 @@ the `http` and `https` browser equivalents perform redirects by default.
 
 By requiring `follow-redirects` this way:
 ```javascript
-var http = require('follow-redirects/http');
-var https = require('follow-redirects/https');
+const http = require('follow-redirects/http');
+const https = require('follow-redirects/https');
 ```
 you can easily tell webpack and friends to replace
 `follow-redirect` by the built-in versions:
