@@ -237,6 +237,22 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("should emit connect events on the returned stream", function () {
+    app.get("/a", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a")
+          .on("connect", function (a, b, c) {
+            resolve({a, b, c})
+          })
+          .on("error", reject);
+      }))
+      .then(function (socket) {
+        assert(socket instanceof net.Socket, "socket event should emit with socket");
+      });
+  });
+
   describe("setTimeout", function () {
     var clock;
     beforeEach(function () {
