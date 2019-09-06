@@ -240,16 +240,26 @@ describe("follow-redirects", function () {
   it("should emit connect events on the returned stream", function () {
     app.get("/a", sendsJson({ a: "b" }));
 
+    var req;
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        http.get("http://localhost:3600/a")
-          .on("connect", function (a, b, c) {
-            resolve({a, b, c})
-          })
-          .on("error", reject);
+        req = http.request({
+          method: "CONNECT",
+          host: "localhost",
+          port: 3600,
+          path: "localhost:3600",
+        });
+        req.on("connect", function (response, socket, head) {
+          resolve({ response: response, socket: socket, head: head });
+        });
+        req.on("error", reject);
+        req.end();
       }))
-      .then(function (socket) {
-        assert(socket instanceof net.Socket, "socket event should emit with socket");
+      .then(function (args) {
+        req.abort();
+        assert(args.response instanceof http.IncomingMessage, "incorrect response argument");
+        assert(args.socket instanceof net.Socket, "incorrect socket argument");
+        assert(args.head instanceof Buffer, "incorrect buffer argument");
       });
   });
 

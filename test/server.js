@@ -2,11 +2,10 @@
 
 var http = require("http");
 var https = require("https");
-var assert = require("assert");
+var net = require("net");
+var url = require("url");
 
 module.exports = function (defaultPorts) {
-  // set default ports for each protocol i.e. {http: 80, https: 443}
-  defaultPorts = defaultPorts || {};
   var servers = [];
 
   /**
@@ -24,28 +23,29 @@ module.exports = function (defaultPorts) {
    */
   function start(options) {
     return new Promise(function (resolve, reject) {
-      if (typeof options === "function") {
-        options = { app: options };
-      }
-      assert(typeof options.app, "function", "app");
-      var server;
-      var port;
-      var protocol = options.protocol;
-      if (!protocol || protocol.trim().match(/^http(:)?$/)) {
-        server = http.createServer(options.app);
-        port = options.port || defaultPorts.http;
-      }
-      else if (protocol.trim().match(/^https(:)?$/)) {
-        server = https.createServer(options, options.app);
-        port = options.port || defaultPorts.https;
-      }
-      assert(typeof port, "number", "port");
+      // Create server
+      var app = typeof options === "function" ? options : options.app;
+      var isHttps = /^https/.test(options.protocol || "http");
+      var server = !isHttps ? http.createServer(app) : https.createServer(options, app);
       servers.push(server);
-      server.listen(port, function (err) {
-        if (err) {
-          return reject(err);
-        }
-        return resolve();
+
+      // Set up CONNECT functionality
+      server.on("connect", (req, clientSocket, head) => {
+        var remote = url.parse("http://" + req.url);
+        var remoteSocket = net.connect(remote.port, remote.hostname, function () {
+          clientSocket.write("HTTP/1.1 200 Connection Established\r\n" +
+                              "Proxy-agent: Test proxy\r\n" +
+                              "\r\n");
+          remoteSocket.write(head);
+          remoteSocket.pipe(clientSocket);
+          clientSocket.pipe(remoteSocket);
+        });
+      });
+
+      // Start the server
+      var port = options.port || (isHttps ? defaultPorts.https : defaultPorts.http);
+      server.listen(port, function (error) {
+        return error ? reject(error) : resolve();
       });
     });
   }
@@ -55,20 +55,13 @@ module.exports = function (defaultPorts) {
    * @returns {Promise} that resolves when all servers have successfully shut down.
    */
   function stop() {
-    // the empty .catch() block allows the next .then() to act like a finally()
-    // once Node.js < 8 is dropped, this can be simplified
-    return Promise.all(servers.map(stopServer))
-      .catch(function () { /* do nothing */ })
-      .then(clearServers);
+    return Promise.all(servers.map(stopServer)).then(clearServers);
   }
 
   function stopServer(server) {
     return new Promise(function (resolve, reject) {
-      server.close(function (err) {
-        if (err) {
-          return reject(err);
-        }
-        return resolve();
+      server.close(function (error) {
+        return error ? reject(error) : resolve();
       });
     });
   }
