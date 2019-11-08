@@ -703,14 +703,13 @@ describe("follow-redirects", function () {
   });
 
   describe("should switch to safe methods when appropriate", function () {
-    function mustUseSameMethod(statusCode, useSameMethod) {
+    function itChangesMethod(statusCode, postToGet, changeAll) {
       describe("when redirecting with status code " + statusCode, function () {
         itRedirectsWith(statusCode, "GET", "GET");
         itRedirectsWith(statusCode, "HEAD", "HEAD");
-        itRedirectsWith(statusCode, "OPTIONS", "OPTIONS");
-        itRedirectsWith(statusCode, "TRACE", "TRACE");
-        itRedirectsWith(statusCode, "POST", useSameMethod ? "POST" : "GET");
-        itRedirectsWith(statusCode, "PUT", useSameMethod ? "PUT" : "GET");
+        itRedirectsWith(statusCode, "POST", postToGet ? "GET" : "POST");
+        itRedirectsWith(statusCode, "PUT", changeAll ? "GET" : "PUT");
+        itRedirectsWith(statusCode, "DELETE", changeAll ? "GET" : "DELETE");
       });
     }
 
@@ -737,11 +736,11 @@ describe("follow-redirects", function () {
       });
     }
 
-    mustUseSameMethod(300, false);
-    mustUseSameMethod(301, false);
-    mustUseSameMethod(302, false);
-    mustUseSameMethod(303, false);
-    mustUseSameMethod(307, true);
+    itChangesMethod(300, false);
+    itChangesMethod(301, true);
+    itChangesMethod(302, true);
+    itChangesMethod(303, true, true);
+    itChangesMethod(307, false);
   });
 
   describe("should handle cross protocol redirects ", function () {
@@ -1086,43 +1085,39 @@ describe("follow-redirects", function () {
     });
   });
 
-  describe("should drop the entity and associated headers", function () {
-    function itDropsBodyAndHeaders(originalMethod) {
-      it("when switching from " + originalMethod + " to GET", function () {
-        app[originalMethod.toLowerCase()]("/a", redirectsTo(302, "http://localhost:3600/b"));
-        app.get("/b", function (req, res) {
-          res.write(JSON.stringify(req.headers));
-          req.pipe(res); // will invalidate JSON if non-empty
-        });
-
-        var opts = url.parse("http://localhost:3600/a");
-        opts.method = originalMethod;
-        opts.headers = {
-          "other": "value",
-          "content-type": "application/javascript",
-          "Content-Length": testFileBuffer.byteLength,
-        };
-
-        return server.start(app)
-          .then(asPromise(function (resolve, reject) {
-            var req = http.request(opts, resolve);
-            fs.createReadStream(testFile).pipe(req);
-            req.on("error", reject);
-          }))
-          .then(asPromise(function (resolve, reject, res) {
-            res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
-          }))
-          .then(function (str) {
-            var body = JSON.parse(str);
-            assert.equal(body.host, "localhost:3600");
-            assert.equal(body.other, "value");
-            assert.equal(body["content-type"], undefined);
-            assert.equal(body["content-length"], undefined);
-          });
+  describe("when switching from POST to GET", function () {
+    it("should drop the entity and associated headers", function () {
+      app.post("/a", redirectsTo(302, "http://localhost:3600/b"));
+      app.get("/b", function (req, res) {
+        res.write(JSON.stringify(req.headers));
+        req.pipe(res); // will invalidate JSON if non-empty
       });
-    }
-    itDropsBodyAndHeaders("POST");
-    itDropsBodyAndHeaders("PUT");
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+      opts.headers = {
+        "other": "value",
+        "content-type": "application/javascript",
+        "Content-Length": testFileBuffer.byteLength,
+      };
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, resolve);
+          fs.createReadStream(testFile).pipe(req);
+          req.on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body.host, "localhost:3600");
+          assert.equal(body.other, "value");
+          assert.equal(body["content-type"], undefined);
+          assert.equal(body["content-length"], undefined);
+        });
+    });
   });
 
   describe("when redirecting to a different host while the host header is set", function () {

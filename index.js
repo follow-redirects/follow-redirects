@@ -6,10 +6,6 @@ var assert = require("assert");
 var Writable = require("stream").Writable;
 var debug = require("debug")("follow-redirects");
 
-// RFC7231§4.2.1: Of the request methods defined by this specification,
-// the GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.
-var SAFE_METHODS = { GET: true, HEAD: true, OPTIONS: true, TRACE: true };
-
 // Create handlers that pass events from native requests
 var eventHandlers = Object.create(null);
 ["abort", "aborted", "connect", "error", "socket", "timeout"].forEach(function (event) {
@@ -305,32 +301,24 @@ RedirectableRequest.prototype._processResponse = function (response) {
     }
 
     // RFC7231§6.4: Automatic redirection needs to done with
-    // care for methods not known to be safe […],
-    // since the user might not wish to redirect an unsafe request.
-    // RFC7231§6.4.7: The 307 (Temporary Redirect) status code indicates
-    // that the target resource resides temporarily under a different URI
-    // and the user agent MUST NOT change the request method
-    // if it performs an automatic redirection to that URI.
-    var header;
-    var headers = this._options.headers;
-    if (statusCode !== 307 && !(this._options.method in SAFE_METHODS)) {
+    // care for methods not known to be safe, […]
+    // RFC7231§6.4.2–3: For historical reasons, a user agent MAY change
+    // the request method from POST to GET for the subsequent request.
+    if ((statusCode === 301 || statusCode === 302) && this._options.method === "POST" ||
+        // RFC7231§6.4.4: The 303 (See Other) status code indicates that
+        // the server is redirecting the user agent to a different resource […]
+        // A user agent can perform a retrieval request targeting that URI
+        // (a GET or HEAD request if using HTTP) […]
+        (statusCode === 303) && !/^(?:GET|HEAD)$/.test(this._options.method)) {
       this._options.method = "GET";
       // Drop a possible entity and headers related to it
       this._requestBodyBuffers = [];
-      for (header in headers) {
-        if (/^content-/i.test(header)) {
-          delete headers[header];
-        }
-      }
+      removeMatchingHeaders(/^content-/i, this._options.headers);
     }
 
     // Drop the Host header, as the redirect might lead to a different host
     if (!this._isRedirect) {
-      for (header in headers) {
-        if (/^host$/i.test(header)) {
-          delete headers[header];
-        }
-      }
+      removeMatchingHeaders(/^host$/i, this._options.headers);
     }
 
     // Perform the redirected request
@@ -445,6 +433,14 @@ function urlToOptions(urlObject) {
     options.port = Number(urlObject.port);
   }
   return options;
+}
+
+function removeMatchingHeaders(regex, headers) {
+  for (var header in headers) {
+    if (regex.test(header)) {
+      delete headers[header];
+    }
+  }
 }
 
 // Exports
