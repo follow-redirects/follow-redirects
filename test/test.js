@@ -3,7 +3,6 @@ var assert = require("assert");
 var net = require("net");
 var server = require("./server")({ https: 3601, http: 3600 });
 var url = require("url");
-var URL = url.URL;
 var followRedirects = require("..");
 var http = followRedirects.http;
 var https = followRedirects.https;
@@ -22,6 +21,8 @@ var asPromise = util.asPromise;
 var testFile = path.resolve(__dirname, "assets/input.txt");
 var testFileBuffer = fs.readFileSync(testFile);
 var testFileString = testFileBuffer.toString();
+
+var nodeMajorVersion = Number.parseInt(process.version.match(/\d+/)[0], 10);
 
 describe("follow-redirects", function () {
   function httpsOptions(app) {
@@ -70,28 +71,30 @@ describe("follow-redirects", function () {
       });
   });
 
-  if (URL) {
-    it("http.get with URL object and callback - redirect", function () {
-      app.get("/a", redirectsTo("/b"));
-      app.get("/b", redirectsTo("/c"));
-      app.get("/c", redirectsTo("/d"));
-      app.get("/d", redirectsTo("/e"));
-      app.get("/e", redirectsTo("/f"));
-      app.get("/f", sendsJson({ a: "b" }));
+  it("http.get with URL object and callback - redirect", function () {
+    if (nodeMajorVersion < 10) {
+      this.skip();
+    }
 
-      return server.start(app)
-        .then(asPromise(function (resolve, reject) {
-          http.get(
-            new URL("http://localhost:3600/a"),
-            concatJson(resolve, reject)
-          ).on("error", reject);
-        }))
-        .then(function (res) {
-          assert.deepEqual(res.parsedJson, { a: "b" });
-          assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
-        });
-    });
-  }
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", redirectsTo("/c"));
+    app.get("/c", redirectsTo("/d"));
+    app.get("/d", redirectsTo("/e"));
+    app.get("/e", redirectsTo("/f"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get(
+          new URL("http://localhost:3600/a"),
+          concatJson(resolve, reject)
+        ).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/f");
+      });
+  });
 
   it("http.get with options object and callback - redirect", function () {
     app.get("/a", redirectsTo("/b"));
