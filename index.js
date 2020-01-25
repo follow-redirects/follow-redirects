@@ -321,10 +321,13 @@ RedirectableRequest.prototype._processResponse = function (response) {
       removeMatchingHeaders(/^host$/i, this._options.headers);
     }
 
-    // Perform the redirected request
+    // Create the redirected request
     var redirectUrl = url.resolve(this._currentUrl, location);
     debug("redirecting to", redirectUrl);
+    this._isRedirect = true;
     Object.assign(this._options, url.parse(redirectUrl));
+
+    // Evaluate the beforeRedirect callback
     if (typeof this._options.beforeRedirect === "function") {
       try {
         this._options.beforeRedirect.call(null, this._options);
@@ -335,8 +338,16 @@ RedirectableRequest.prototype._processResponse = function (response) {
       }
       this._sanitizeOptions(this._options);
     }
-    this._isRedirect = true;
-    this._performRequest();
+
+    // Perform the redirected request
+    try {
+      this._performRequest();
+    }
+    catch (cause) {
+      var error = new Error("Cannot redirect: " + cause.message);
+      error.cause = cause;
+      this.emit("error", error);
+    }
   }
   else {
     // The response is not a redirect; return it as-is

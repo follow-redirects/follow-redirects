@@ -266,6 +266,31 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("emits an error on redirects with an invalid location", function () {
+    if (nodeMajorVersion < 10) {
+      this.skip();
+    }
+
+    app.get("/a", function (req, res) {
+      // Explictly send response with invalid Location header
+      res.socket.write("HTTP/1.1 301 Moved Permanently\n");
+      res.socket.write("Location: http://смольный-институт.рф\n");
+      res.socket.write("\n");
+      res.socket.end();
+    });
+
+    return server.start(app)
+      .then(asPromise(function (resolve) {
+        http.get("http://localhost:3600/a").on("error", resolve);
+      }))
+      .then(function (error) {
+        assert(error instanceof Error);
+        assert.equal(error.message, "Cannot redirect: Request path contains unescaped characters");
+        assert(error.cause instanceof Error);
+        assert.equal(error.cause.code, "ERR_UNESCAPED_CHARACTERS");
+      });
+  });
+
   describe("setTimeout", function () {
     var clock;
     beforeEach(function () {
