@@ -285,7 +285,8 @@ describe("follow-redirects", function () {
       }))
       .then(function (error) {
         assert(error instanceof Error);
-        assert.equal(error.message, "Cannot redirect: Request path contains unescaped characters");
+        assert.equal(error.code, "ERR_FR_REDIRECTION_FAILURE");
+        assert.equal(error.message, "Redirected request failed: Request path contains unescaped characters");
         assert(error.cause instanceof Error);
         assert.equal(error.cause.code, "ERR_UNESCAPED_CHARACTERS");
       });
@@ -332,8 +333,8 @@ describe("follow-redirects", function () {
           });
           req.on("error", resolve);
         }))
-        .then(function (err) {
-          assert.equal(err.code, "ECONNREFUSED");
+        .then(function (error) {
+          assert.equal(error.code, "ECONNREFUSED");
           clock.tick(5000);
         });
     });
@@ -650,8 +651,10 @@ describe("follow-redirects", function () {
         .then(asPromise(function (resolve, reject) {
           http.get("http://localhost:3600/r22", reject).on("error", resolve);
         }))
-        .then(function (err) {
-          assert.ok(err.toString().match(/Max redirects exceeded/));
+        .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_TOO_MANY_REDIRECTS");
+          assert.equal(error.message, "Maximum number of redirects exceeded");
         });
     });
 
@@ -675,8 +678,10 @@ describe("follow-redirects", function () {
         .then(asPromise(function (resolve, reject) {
           http.get(u, reject).on("error", resolve);
         }))
-        .then(function (err) {
-          assert.ok(err.toString().match(/Max redirects exceeded/));
+        .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_TOO_MANY_REDIRECTS");
+          assert.equal(error.message, "Maximum number of redirects exceeded");
         });
     });
   });
@@ -817,9 +822,10 @@ describe("follow-redirects", function () {
             .on("response", function () { return reject(new Error("unexpected response")); })
             .on("error", reject);
         }))
-        .catch(function (err) {
-          assert(err instanceof Error);
-          assert.equal(err.message, "Unsupported protocol about:");
+        .catch(function (error) {
+          assert(error instanceof Error);
+          assert(error instanceof TypeError);
+          assert.equal(error.message, "Unsupported protocol about:");
         });
     });
   });
@@ -868,6 +874,8 @@ describe("follow-redirects", function () {
           req.write(testFileString);
         }
         catch (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_STREAM_WRITE_AFTER_END");
           assert.equal(error.message, "write after end");
           return;
         }
@@ -1055,6 +1063,8 @@ describe("follow-redirects", function () {
           req.write("9");
         }))
         .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_MAX_BODY_LENGTH_EXCEEDED");
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
         });
     });
@@ -1073,6 +1083,8 @@ describe("follow-redirects", function () {
           req.end("9");
         }))
         .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_MAX_BODY_LENGTH_EXCEEDED");
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
         });
     });
@@ -1093,6 +1105,8 @@ describe("follow-redirects", function () {
           req.end("9");
         }))
         .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_MAX_BODY_LENGTH_EXCEEDED");
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
         });
     });
@@ -1109,6 +1123,8 @@ describe("follow-redirects", function () {
         error = e;
       }
       req.abort();
+      assert(error instanceof Error);
+      assert(error instanceof TypeError);
       assert.equal(error.message, "data should be a string, Buffer or Uint8Array");
     });
   });
@@ -1502,10 +1518,10 @@ describe("follow-redirects", function () {
         .then(function () {
           assert.fail("request chain should have been aborted");
         })
-        .catch(function (err) {
+        .catch(function (error) {
           assert(!redirected);
-          assert(err instanceof Error);
-          assert.equal(err.message, "no redirects!");
+          assert(error instanceof Error);
+          assert.equal(error.message, "no redirects!");
         });
     });
   });
