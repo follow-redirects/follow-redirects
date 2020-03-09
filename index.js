@@ -237,8 +237,14 @@ RedirectableRequest.prototype._performRequest = function () {
   }
 
   // Create the native request
-  var request = this._currentRequest =
+  var request;
+  try {
+    request = this._currentRequest =
         nativeProtocol.request(this._options, this._onNativeResponse);
+  } catch (err) {
+    this.emit("error", err);
+    return;
+  }
   this._currentUrl = url.format(this._options);
 
   // Set up event handlers
