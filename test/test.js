@@ -246,23 +246,18 @@ describe("follow-redirects", function () {
     var req;
     return server.start(app)
       .then(asPromise(function (resolve, reject) {
-        req = http.request({
-          method: "CONNECT",
-          host: "localhost",
-          port: 3600,
-          path: "localhost:3600",
-        });
+        req = http.get("http://localhost:3600/a");
         req.on("connect", function (response, socket, head) {
           resolve({ response: response, socket: socket, head: head });
         });
         req.on("error", reject);
-        req.end();
+        req._currentRequest.emit("connect", "r", "s", "h");
       }))
       .then(function (args) {
         req.abort();
-        assert(args.response instanceof http.IncomingMessage, "incorrect response argument");
-        assert(args.socket instanceof net.Socket, "incorrect socket argument");
-        assert(args.head instanceof Buffer, "incorrect buffer argument");
+        assert.equal(args.response, "r");
+        assert.equal(args.socket, "s");
+        assert.equal(args.head, "h");
       });
   });
 
