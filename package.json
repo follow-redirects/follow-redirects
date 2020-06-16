@@ -37,8 +37,8 @@
     "Olivier Lalonde <olalonde@gmail.com> (http://www.syskall.com)",
     "James Talmage <james@talmage.io>"
   ],
-  "dependencies": {
-    "debug": "^3.0.0"
+  "peerDependencies": {
+    "debug": "^3.0.0 || ^4.0.0"
   },
   "devDependencies": {
     "concat-stream": "^2.0.0",
