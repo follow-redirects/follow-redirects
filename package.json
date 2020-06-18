@@ -37,6 +37,12 @@
     "Olivier Lalonde <olalonde@gmail.com> (http://www.syskall.com)",
     "James Talmage <james@talmage.io>"
   ],
+  "funding": [
+    {
+      "type" : "individual",
+      "url" : "https://github.com/sponsors/RubenVerborgh"
+    }
+  ],
   "peerDependencies": {
     "debug": "^3.0.0 || ^4.0.0"
   },
