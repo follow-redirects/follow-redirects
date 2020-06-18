@@ -43,9 +43,6 @@
       "url" : "https://github.com/sponsors/RubenVerborgh"
     }
   ],
-  "peerDependencies": {
-    "debug": "^3.0.0 || ^4.0.0"
-  },
   "devDependencies": {
     "concat-stream": "^2.0.0",
     "eslint": "^5.16.0",
