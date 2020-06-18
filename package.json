@@ -1,6 +1,6 @@
 {
   "name": "follow-redirects",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "HTTP and HTTPS modules that follow redirects.",
   "license": "MIT",
   "main": "index.js",
@@ -39,8 +39,8 @@
   ],
   "funding": [
     {
-      "type" : "individual",
-      "url" : "https://github.com/sponsors/RubenVerborgh"
+      "type": "individual",
+      "url": "https://github.com/sponsors/RubenVerborgh"
     }
   ],
   "devDependencies": {
