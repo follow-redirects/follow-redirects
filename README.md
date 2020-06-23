@@ -28,13 +28,14 @@ You can inspect the final redirected URL through the `responseUrl` property on t
 If no redirection happened, `responseUrl` is the original request URL.
 
 ```javascript
-https.request({
+const request = https.request({
   host: 'bitly.com',
   path: '/UHfDGO',
 }, response => {
   console.log(response.responseUrl);
   // 'http://duckduckgo.com/robots.txt'
 });
+request.end();
 ```
 
 ## Options
