@@ -63,8 +63,9 @@ const { http, https } = require('follow-redirects');
 
 const options = url.parse('http://bit.ly/900913');
 options.maxRedirects = 10;
-options.beforeRedirect = options => {
-  // Use this function to adjust the options upon redirecting,
+options.beforeRedirect = (options, { headers }) => {
+  // Use this to adjust the request options upon redirecting,
+  // to inspect the latest response headers,
   // or to cancel the request by throwing an error
   if (options.hostname === "example.com") {
     options.auth = "user:password";

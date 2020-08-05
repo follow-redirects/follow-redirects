@@ -1623,6 +1623,31 @@ describe("follow-redirects", function () {
           assert.equal(error.message, "no redirects!");
         });
     });
+
+    it("access response header in beforeRedirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function (req, res) {
+        res.json(req.headers);
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function (optionz, response) {
+              optionz.headers.testheader = "itsAtest" + response.headers.location;
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.strictEqual(res.parsedJson.testheader, "itsAtest/b");
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/b");
+        });
+    });
   });
 });
 
