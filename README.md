@@ -63,11 +63,19 @@ const { http, https } = require('follow-redirects');
 
 const options = url.parse('http://bit.ly/900913');
 options.maxRedirects = 10;
-options.beforeRedirect = options => {
+options.beforeRedirect = (options, responseHeaders) => {
   // Use this function to adjust the options upon redirecting,
   // or to cancel the request by throwing an error
   if (options.hostname === "example.com") {
     options.auth = "user:password";
+  }
+  var oldCookies = responseHeaders["set-cookie"];
+  if(oldCookies) {
+      var cookies = [].concat(options.headers["cookie"]);
+      oldCookies.forEach(
+          element => cookies.push(element)
+      );
+      options.headers["cookie"] = cookies;
   }
 };
 http.request(options);
