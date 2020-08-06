@@ -352,9 +352,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
 
     // Evaluate the beforeRedirect callback
     if (typeof this._options.beforeRedirect === "function") {
+      var headers = { responseHeaders: this._currentRequest.res.headers };
       try {
-        this._options.responseHeaders = this._currentRequest.res.headers;
-        this._options.beforeRedirect.call(null, this._options);
+        this._options.beforeRedirect.call(null, this._options, headers);
       }
       catch (err) {
         this.emit("error", err);

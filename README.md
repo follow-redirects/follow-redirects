@@ -69,17 +69,11 @@ options.beforeRedirect = (options) => {
   if (options.hostname === "example.com") {
     options.auth = "user:password";
   }
-  var responseCookies = options.responseHeaders["set-cookie"];
-  if(responseCookies) {
-    var cookies = [];
-    if (optionz.headers.cookie) {
-      cookies.concat(optionz.headers.cookie);
-    }
-    var responseCookies = optionz.responseHeaders["set-cookie"];
-    if (responseCookies) {
-      responseCookies.forEach(element => cookies.push(element));
-    }
-    optionz.headers.cookie = cookies;
+};
+// Alternative:
+options.beforeRedirect = (options, headers) => {
+  if (headers.responseHeaders.location === "/protected") {
+    options.auth = "user:password";
   }
 };
 http.request(options);
@@ -98,8 +92,6 @@ the following per-request options are supported:
 - `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
 
 - `trackRedirects` (default: `false`) – whether to store the redirected response details into the `redirects` array on the response object.
-
-- `responseHeaders` (default: `undefined`): Set of headers of the intermediate (302) response.
 
 ### Advanced usage
 By default, `follow-redirects` will use the Node.js default implementations

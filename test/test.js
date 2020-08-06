@@ -15,7 +15,6 @@ var concat = require("concat-stream");
 var concatJson = util.concatJson;
 var delay = util.delay;
 var redirectsTo = util.redirectsTo;
-var redirectsToAndSetsCookie = util.redirectsToAndSetsCookie;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
 
@@ -1626,7 +1625,7 @@ describe("follow-redirects", function () {
     });
 
     it("access response header in beforeRedirect", function () {
-      app.get("/a", redirectsToAndSetsCookie("/b", "value A"));
+      app.get("/a", redirectsTo("/b"));
       app.get("/b", function (req, res) {
         res.json(req.headers);
       });
@@ -1638,22 +1637,14 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            beforeRedirect: function (optionz) {
-              var cookies = [];
-              if (optionz.headers.cookie) {
-                cookies.concat(optionz.headers.cookie);
-              }
-              var responseCookies = optionz.responseHeaders["set-cookie"];
-              if (responseCookies) {
-                responseCookies.forEach(element => cookies.push(element));
-              }
-              optionz.headers.cookie = cookies;
+            beforeRedirect: function (optionz, headers) {
+              optionz.headers.testheader = "itsAtest" + headers.responseHeaders.location;
             },
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
         }))
         .then(function (res) {
-          assert.strictEqual(res.parsedJson.cookie, "value A");
+          assert.strictEqual(res.parsedJson.testheader, "itsAtest/b");
           assert.deepEqual(res.responseUrl, "http://localhost:3600/b");
         });
     });
