@@ -63,19 +63,23 @@ const { http, https } = require('follow-redirects');
 
 const options = url.parse('http://bit.ly/900913');
 options.maxRedirects = 10;
-options.beforeRedirect = (options, responseHeaders) => {
+options.beforeRedirect = (options) => {
   // Use this function to adjust the options upon redirecting,
   // or to cancel the request by throwing an error
   if (options.hostname === "example.com") {
     options.auth = "user:password";
   }
-  var oldCookies = responseHeaders["set-cookie"];
-  if(oldCookies) {
-      var cookies = [].concat(options.headers["cookie"]);
-      oldCookies.forEach(
-          element => cookies.push(element)
-      );
-      options.headers["cookie"] = cookies;
+  var responseCookies = options.responseHeaders["set-cookie"];
+  if(responseCookies) {
+    var cookies = [];
+    if (optionz.headers.cookie) {
+      cookies.concat(optionz.headers.cookie);
+    }
+    var responseCookies = optionz.responseHeaders["set-cookie"];
+    if (responseCookies) {
+      responseCookies.forEach(element => cookies.push(element));
+    }
+    optionz.headers.cookie = cookies;
   }
 };
 http.request(options);
@@ -95,6 +99,7 @@ the following per-request options are supported:
 
 - `trackRedirects` (default: `false`) – whether to store the redirected response details into the `redirects` array on the response object.
 
+- `responseHeaders` (default: `undefined`): Set of headers of the intermediate (302) response.
 
 ### Advanced usage
 By default, `follow-redirects` will use the Node.js default implementations

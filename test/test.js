@@ -15,6 +15,7 @@ var concat = require("concat-stream");
 var concatJson = util.concatJson;
 var delay = util.delay;
 var redirectsTo = util.redirectsTo;
+var redirectsToAndSetsCookie = util.redirectsToAndSetsCookie;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
 
@@ -1621,6 +1622,39 @@ describe("follow-redirects", function () {
           assert(!redirected);
           assert(error instanceof Error);
           assert.equal(error.message, "no redirects!");
+        });
+    });
+
+    it("access response header in beforeRedirect", function () {
+      app.get("/a", redirectsToAndSetsCookie("/b", "value A"));
+      app.get("/b", function (req, res) {
+        res.json(req.headers);
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function (optionz) {
+              var cookies = [];
+              if (optionz.headers.cookie) {
+                cookies.concat(optionz.headers.cookie);
+              }
+              var responseCookies = optionz.responseHeaders["set-cookie"];
+              if (responseCookies) {
+                responseCookies.forEach(element => cookies.push(element));
+              }
+              optionz.headers.cookie = cookies;
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.strictEqual(res.parsedJson.cookie, "value A");
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/b");
         });
     });
   });

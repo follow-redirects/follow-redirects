@@ -7,6 +7,14 @@ function redirectsTo() {
   };
 }
 
+function redirectsToAndSetsCookie() {
+  var args = Array.prototype.slice.call(arguments);
+  return function (req, res) {
+    res.setHeader("set-cookie", args[1]);
+    res.redirect(302, [args[0]]);
+  };
+}
+
 function sendsJson(json) {
   return function (req, res) {
     res.json(json);
@@ -48,4 +56,5 @@ module.exports = {
   delay: delay,
   redirectsTo: redirectsTo,
   sendsJson: sendsJson,
+  redirectsToAndSetsCookie: redirectsToAndSetsCookie,
 };
