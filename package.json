@@ -43,10 +43,8 @@
       "url": "https://github.com/sponsors/RubenVerborgh"
     }
   ],
-  "peerDependenciesMeta": {
-    "debug": {
-      "optional": true
-    }
+  "dependencies": {
+    "debug": "^4.3.1"
   },
   "devDependencies": {
     "concat-stream": "^2.0.0",
