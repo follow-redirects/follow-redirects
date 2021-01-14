@@ -1,9 +1,3 @@
-var debug;
-try {
-  /* eslint global-require: off */
-  debug = require("debug")("follow-redirects");
-}
-catch (error) {
-  debug = function () { /* */ };
-}
+var debug = require("debug")("follow-redirects");
+
 module.exports = debug;
