@@ -1,0 +1,511 @@
+
+
+  follow-redirects
+    ✓ http.get with string and callback - redirect
+    ✓ http.get with URL object and callback - redirect
+    ✓ http.get with options object and callback - redirect
+    ✓ http.get with string and callback - no redirect
+    ✓ http.get with options object and callback - no redirect
+    ✓ http.get with host option and callback - redirect
+    ✓ http.get with response event
+    ✓ should return with the original status code if the response does not contain a location header
+    ✓ should emit connection errors on the returned stream
+    ✓ should emit socket events on the returned stream
+    ✓ should emit connect events on the returned stream
+    ✓ emits an error on redirects with an invalid location
+    ✓ should follow redirects over https
+    ✓ should destroy responses
+    ✓ should honor query params in redirects
+    ✓ should allow aborting
+    ✓ should provide connection
+    ✓ should provide flushHeaders
+    ✓ should provide getHeader
+    ✓ should provide removeHeader
+    ✓ should provide setHeader
+    ✓ should provide setNoDelay
+    ✓ should provide setSocketKeepAlive
+    ✓ should provide setTimeout
+    ✓ should provide socket
+    ✓ should wait for an explicit call to end
+    ✓ errors on write after end
+    ✓ should support writing into request stream without redirects
+    ✓ should support writing into request stream with redirects
+    ✓ should support piping into request stream without redirects
+    ✓ should support piping into request stream with redirects
+    ✓ should support piping into request stream with explicit Content-Length without redirects
+    ✓ should support piping into request stream with explicit Content-Length with redirects
+    setTimeout
+      ✓ clears timeouts after a successful response
+      ✓ clears timeouts after an error response
+      ✓ sets a timeout when the socket already exists
+      ✓ should timeout on the final request
+      ✓ should include redirect delays in the timeout
+      ✓ overrides existing timeouts
+    should obey a `maxRedirects` property
+      ✓ which defaults to 21 (47ms)
+      ✓ which can be set globally
+      ✓ set as an option on an individual request
+    the trackRedirects option
+      when not set
+        ✓ should not track redirects
+      when set to true
+        ✓ should track redirects
+    should switch to safe methods when appropriate
+      when redirecting with status code 300
+        ✓ should reuse GET
+        ✓ should reuse HEAD
+        ✓ should reuse POST
+        ✓ should reuse PUT
+        ✓ should reuse DELETE
+      when redirecting with status code 301
+        ✓ should reuse GET
+        ✓ should reuse HEAD
+        ✓ should switch from POST to GET
+        ✓ should reuse PUT
+        ✓ should reuse DELETE
+      when redirecting with status code 302
+        ✓ should reuse GET
+        ✓ should reuse HEAD
+        ✓ should switch from POST to GET
+        ✓ should reuse PUT
+        ✓ should reuse DELETE
+      when redirecting with status code 303
+        ✓ should reuse GET
+        ✓ should reuse HEAD
+        ✓ should switch from POST to GET
+        ✓ should switch from PUT to GET
+        ✓ should switch from DELETE to GET
+      when redirecting with status code 307
+        ✓ should reuse GET
+        ✓ should reuse HEAD
+        ✓ should reuse POST
+        ✓ should reuse PUT
+        ✓ should reuse DELETE
+    should handle cross protocol redirects 
+      ✓ (https -> http -> https)
+      ✓ (http -> https -> http)
+    should error on an unsupported protocol redirect
+      ✓ (http -> about)
+    should obey a `maxBodyLength` property
+      ✓ which defaults to 10MB
+      ✓ set globally, on write
+      ✓ set per request, on write
+      ✓ set globally, on end
+      ✓ set per request, on end
+    writing invalid data
+      ✓ throws an error
+    when switching from POST to GET
+      ✓ should drop the entity and associated headers
+    when redirecting to a different host while the host header is set
+      ✓ uses the new host header
+    when the client passes an Authorization header
+      ✓ keeps the header when redirected to the same host
+      ✓ keeps the header when redirected to the same host via header
+      ✓ drops the header when redirected to a different host
+      ✓ drops the header when redirected from a different host via header
+    when the followRedirects option is set to false
+      ✓ does not redirect
+    should choose the right agent per protocol
+      ✓ (https -> http -> https)
+    should not hang on empty writes
+      ✓ when data is the empty string without encoding
+      ✓ when data is the empty string with encoding
+      ✓ when data is Buffer.from('')
+    end accepts as arguments
+      ✓ (none)
+      ✓ the empty string
+      ✓ a non-empty string
+      ✓ a non-empty string and an encoding
+      ✓ a non-empty string, an encoding, and a callback
+      ✓ a non-empty string and a callback
+      ✓ a callback
+    change request options before redirects
+      ✓ only call beforeRedirect on redirects, not the inital http call
+      ✓ ignore beforeRedirect if not a function
+      ✓ append new header with every redirect
+      ✓ abort request chain after throwing an error
+      ✓ access response header in beforeRedirect
+
+
+  101 passing (503ms)
+
+TN:
+SF:/Users/ruben/Documents/JavaScript/follow-redirects/index.js
+FN:11,(anonymous_0)
+FN:12,(anonymous_1)
+FN:36,RedirectableRequest
+FN:55,(anonymous_3)
+FN:65,(anonymous_4)
+FN:102,(anonymous_5)
+FN:121,(anonymous_6)
+FN:130,(anonymous_7)
+FN:136,(anonymous_8)
+FN:142,(anonymous_9)
+FN:152,(anonymous_10)
+FN:163,startTimer
+FN:165,(anonymous_12)
+FN:170,clearTimer
+FN:178,(anonymous_14)
+FN:179,(anonymous_15)
+FN:185,(anonymous_16)
+FN:187,(anonymous_17)
+FN:191,(anonymous_18)
+FN:223,(anonymous_19)
+FN:260,writeNext
+FN:287,(anonymous_21)
+FN:388,wrap
+FN:397,(anonymous_23)
+FN:403,request
+FN:441,get
+FN:460,urlToOptions
+FN:479,removeMatchingHeaders
+FN:490,createErrorType
+FN:491,CustomError
+FNF:30
+FNH:30
+FNDA:6,(anonymous_0)
+FNDA:286,(anonymous_1)
+FNDA:101,RedirectableRequest
+FNDA:256,(anonymous_3)
+FNDA:33,(anonymous_4)
+FNDA:97,(anonymous_5)
+FNDA:7,(anonymous_6)
+FNDA:3,(anonymous_7)
+FNDA:1,(anonymous_8)
+FNDA:9,(anonymous_9)
+FNDA:8,(anonymous_10)
+FNDA:9,startTimer
+FNDA:4,(anonymous_12)
+FNDA:9,clearTimer
+FNDA:5,(anonymous_14)
+FNDA:20,(anonymous_15)
+FNDA:3,(anonymous_16)
+FNDA:14,(anonymous_17)
+FNDA:104,(anonymous_18)
+FNDA:274,(anonymous_19)
+FNDA:189,writeNext
+FNDA:256,(anonymous_21)
+FNDA:1,wrap
+FNDA:2,(anonymous_23)
+FNDA:101,request
+FNDA:49,get
+FNDA:50,urlToOptions
+FNDA:185,removeMatchingHeaders
+FNDA:4,createErrorType
+FNDA:8,CustomError
+DA:1,1
+DA:2,1
+DA:3,1
+DA:4,1
+DA:5,1
+DA:6,1
+DA:7,1
+DA:10,1
+DA:11,1
+DA:12,6
+DA:13,286
+DA:18,1
+DA:22,1
+DA:26,1
+DA:30,1
+DA:38,101
+DA:39,101
+DA:40,101
+DA:41,101
+DA:42,101
+DA:43,101
+DA:44,101
+DA:45,101
+DA:46,101
+DA:49,101
+DA:50,93
+DA:54,101
+DA:55,101
+DA:56,256
+DA:60,101
+DA:62,1
+DA:65,1
+DA:67,33
+DA:68,1
+DA:72,32
+DA:73,1
+DA:75,31
+DA:76,2
+DA:77,2
+DA:82,31
+DA:83,7
+DA:84,4
+DA:86,7
+DA:89,24
+DA:90,20
+DA:91,20
+DA:92,20
+DA:96,4
+DA:97,4
+DA:102,1
+DA:104,97
+DA:105,1
+DA:106,1
+DA:108,96
+DA:109,1
+DA:110,1
+DA:114,97
+DA:115,88
+DA:116,88
+DA:119,9
+DA:120,9
+DA:121,9
+DA:122,7
+DA:123,7
+DA:125,9
+DA:130,1
+DA:131,3
+DA:132,3
+DA:136,1
+DA:137,1
+DA:138,1
+DA:142,1
+DA:143,9
+DA:144,8
+DA:147,9
+DA:148,1
+DA:151,8
+DA:152,8
+DA:153,8
+DA:157,9
+DA:158,9
+DA:160,9
+DA:164,9
+DA:165,9
+DA:166,4
+DA:171,9
+DA:175,1
+DA:179,5
+DA:180,20
+DA:185,1
+DA:186,3
+DA:187,14
+DA:191,1
+DA:193,104
+DA:194,93
+DA:200,104
+DA:202,52
+DA:203,6
+DA:205,52
+DA:209,104
+DA:210,8
+DA:211,8
+DA:212,7
+DA:215,1
+DA:216,1
+DA:223,1
+DA:225,274
+DA:226,274
+DA:227,274
+DA:228,1
+DA:229,1
+DA:234,273
+DA:235,3
+DA:236,3
+DA:240,273
+DA:242,272
+DA:245,272
+DA:246,272
+DA:248,1632
+DA:249,1632
+DA:255,272
+DA:257,171
+DA:258,171
+DA:259,171
+DA:260,171
+DA:263,189
+DA:266,189
+DA:270,189
+DA:271,18
+DA:273,18
+DA:274,18
+DA:278,171
+DA:279,168
+DA:287,1
+DA:289,256
+DA:290,256
+DA:291,3
+DA:304,256
+DA:305,256
+DA:308,176
+DA:309,176
+DA:310,176
+DA:312,176
+DA:316,176
+DA:317,2
+DA:318,2
+DA:325,174
+DA:331,6
+DA:333,6
+DA:334,6
+DA:338,174
+DA:342,174
+DA:343,174
+DA:344,174
+DA:345,174
+DA:346,174
+DA:349,174
+DA:350,5
+DA:354,174
+DA:355,4
+DA:356,4
+DA:357,4
+DA:360,1
+DA:361,1
+DA:363,3
+DA:367,173
+DA:368,173
+DA:371,1
+DA:372,1
+DA:373,1
+DA:378,80
+DA:379,80
+DA:380,80
+DA:383,80
+DA:390,1
+DA:396,1
+DA:397,1
+DA:398,2
+DA:399,2
+DA:400,2
+DA:405,101
+DA:406,49
+DA:407,49
+DA:408,49
+DA:415,52
+DA:416,1
+DA:419,51
+DA:420,51
+DA:421,51
+DA:423,101
+DA:424,25
+DA:425,25
+DA:429,101
+DA:433,101
+DA:435,101
+DA:436,101
+DA:437,101
+DA:442,49
+DA:443,49
+DA:444,49
+DA:448,2
+DA:453,1
+DA:461,50
+DA:473,50
+DA:474,49
+DA:476,50
+DA:481,185
+DA:482,18
+DA:483,7
+DA:484,7
+DA:487,185
+DA:492,8
+DA:493,8
+DA:495,4
+DA:496,4
+DA:497,4
+DA:498,4
+DA:499,4
+DA:503,1
+DA:504,1
+LF:220
+LH:220
+BRDA:49,0,0,93
+BRDA:49,0,1,8
+BRDA:67,1,0,1
+BRDA:67,1,1,32
+BRDA:72,2,0,1
+BRDA:72,2,1,31
+BRDA:72,3,0,32
+BRDA:72,3,1,13
+BRDA:72,3,2,12
+BRDA:75,4,0,2
+BRDA:75,4,1,29
+BRDA:82,5,0,7
+BRDA:82,5,1,24
+BRDA:83,6,0,4
+BRDA:83,6,1,3
+BRDA:89,7,0,20
+BRDA:89,7,1,4
+BRDA:104,8,0,1
+BRDA:104,8,1,96
+BRDA:108,9,0,1
+BRDA:108,9,1,95
+BRDA:114,10,0,88
+BRDA:114,10,1,9
+BRDA:143,11,0,8
+BRDA:143,11,1,1
+BRDA:147,12,0,1
+BRDA:147,12,1,8
+BRDA:193,13,0,93
+BRDA:193,13,1,11
+BRDA:200,14,0,52
+BRDA:200,14,1,52
+BRDA:202,15,0,6
+BRDA:202,15,1,46
+BRDA:209,16,0,8
+BRDA:209,16,1,96
+BRDA:209,17,0,104
+BRDA:209,17,1,8
+BRDA:211,18,0,7
+BRDA:211,18,1,1
+BRDA:227,19,0,1
+BRDA:227,19,1,273
+BRDA:234,20,0,3
+BRDA:234,20,1,270
+BRDA:248,21,0,1632
+BRDA:255,22,0,171
+BRDA:255,22,1,101
+BRDA:263,23,0,189
+BRDA:266,24,0,189
+BRDA:270,25,0,18
+BRDA:270,25,1,171
+BRDA:273,26,0,18
+BRDA:278,27,0,168
+BRDA:278,27,1,3
+BRDA:290,28,0,3
+BRDA:290,28,1,253
+BRDA:305,29,0,176
+BRDA:305,29,1,80
+BRDA:305,30,0,256
+BRDA:305,30,1,177
+BRDA:305,30,2,176
+BRDA:305,30,3,176
+BRDA:316,31,0,2
+BRDA:316,31,1,174
+BRDA:325,32,0,6
+BRDA:325,32,1,168
+BRDA:325,33,0,174
+BRDA:325,33,1,163
+BRDA:325,33,2,147
+BRDA:325,33,3,171
+BRDA:325,33,4,5
+BRDA:338,34,0,174
+BRDA:338,34,1,171
+BRDA:349,35,0,5
+BRDA:349,35,1,169
+BRDA:354,36,0,4
+BRDA:354,36,1,170
+BRDA:405,37,0,49
+BRDA:405,37,1,52
+BRDA:415,38,0,1
+BRDA:415,38,1,51
+BRDA:415,39,0,52
+BRDA:415,39,1,52
+BRDA:423,40,0,25
+BRDA:423,40,1,76
+BRDA:463,41,0,50
+BRDA:473,42,0,49
+BRDA:473,42,1,1
+BRDA:482,43,0,7
+BRDA:482,43,1,11
+BRDA:493,44,0,8
+BRDA:493,44,1,7
+BRF:91
+BRH:91
+end_of_record

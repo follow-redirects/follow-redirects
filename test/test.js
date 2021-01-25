@@ -287,6 +287,28 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("emits an error when the request fails for another reason", function () {
+    app.get("/a", function (req, res) {
+      res.socket.write("HTTP/1.1 301 Moved Permanently\n");
+      res.socket.write("Location: other\n");
+      res.socket.write("\n");
+      res.socket.end();
+    });
+
+    return server.start(app)
+      .then(asPromise(function (resolve) {
+        var request = http.get("http://localhost:3600/a");
+        request._performRequest = function () {
+          throw new Error("custom");
+        };
+        request.on("error", resolve);
+      }))
+      .then(function (error) {
+        assert(error instanceof Error);
+        assert.equal(error.message, "Redirected request failed: custom");
+      });
+  });
+
   describe("setTimeout", function () {
     var clock;
     beforeEach(function () {
