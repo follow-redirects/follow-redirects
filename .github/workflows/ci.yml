@@ -41,6 +41,7 @@ jobs:
       - run: npm install
       - if: ${{ matrix.node-version == '4.x' }}
         run: npm install mocha@5.0.0 eslint@4.19.1 esquery@1.0.0 nyc@11.8.0
+      - run: set -o pipefail
       - run: node_modules/.bin/nyc --reporter=text-lcov node_modules/.bin/mocha | tee lcov.info
       - uses: coverallsapp/github-action@master
         if: ${{ matrix.node-version == '14.0' }}
