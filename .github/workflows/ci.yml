@@ -15,8 +15,8 @@ jobs:
       matrix:
         node-version:
           -  '4.x'
-          -  '6.x'
           -  '6.0'
+          -  '6.x'
           -  '7.x'
           -  '8.x'
           -  '9.x'
