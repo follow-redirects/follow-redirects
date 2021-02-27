@@ -61,6 +61,13 @@ function RedirectableRequest(options, responseCallback) {
 }
 RedirectableRequest.prototype = Object.create(Writable.prototype);
 
+RedirectableRequest.prototype.abort = function(...args){
+  this._currentRequest.abort(...args)
+  this.removeAllListeners()
+  this._currentRequest.removeAllListeners()
+  this._currentRequest.on('error',function(){})
+}
+
 // Writes buffered data to the current native request
 RedirectableRequest.prototype.write = function (data, encoding, callback) {
   // Writing is not allowed if end has been called
@@ -144,36 +151,45 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
     this.once("timeout", callback);
   }
 
+  const clearTimer = () => {
+    clearTimeout(this._timeout);
+    if (callback) {
+      this.removeListener('timeout', callback)
+    }
+  }
+  let timerClear = clearTimer
   if (this.socket) {
     startTimer(this, msecs);
   }
   else {
-    var self = this;
-    this._currentRequest.once("socket", function () {
-      startTimer(self, msecs);
-    });
+    const socketHandle = () => {
+      startTimer(this, msecs);
+    }
+    this._currentRequest.once("socket", socketHandle);
+
+    timerClear = () => {
+      this._currentRequest.removeListener("socket", socketHandle);
+      clearTimer()
+    }
   }
 
-  this.once("response", clearTimer);
-  this.once("error", clearTimer);
+  this.once("response", timerClear);
+  this.once("error", timerClear);
 
   return this;
 };
 
 function startTimer(request, msecs) {
-  clearTimeout(request._timeout);
+  if(request._timeout) clearTimeout(request._timeout);
   request._timeout = setTimeout(function () {
     request.emit("timeout");
   }, msecs);
 }
 
-function clearTimer() {
-  clearTimeout(this._timeout);
-}
 
 // Proxy all other public ClientRequest methods
 [
-  "abort", "flushHeaders", "getHeader",
+  "flushHeaders", "getHeader",
   "setNoDelay", "setSocketKeepAlive",
 ].forEach(function (method) {
   RedirectableRequest.prototype[method] = function (a, b) {
