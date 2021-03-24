@@ -375,6 +375,24 @@ describe("follow-redirects", function () {
         }));
     });
 
+    it("destroys the socket after configured inactivity period", function () {
+      app.get("/data", delay(clock, 3000, sendsJson({ took: "toolongtosenddata" })));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/data", concatJson(reject, reject));
+          req.on("error", reject);
+          req.setTimeout(100, function () {
+            throw new Error("should not have timed out");
+          });
+          req.on("socket", function () {
+            req.socket.on("timeout", function () {
+              resolve();
+            });
+          });
+        }));
+    });
+
     it("should timeout on the final request", function () {
       app.get("/redirect1", redirectsTo("/redirect2"));
       app.get("/redirect2", redirectsTo("/timeout"));
