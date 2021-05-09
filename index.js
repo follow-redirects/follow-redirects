@@ -63,12 +63,8 @@ function RedirectableRequest(options, responseCallback) {
 RedirectableRequest.prototype = Object.create(Writable.prototype);
 
 RedirectableRequest.prototype.abort = function () {
-  // Abort the internal request
   abortRequest(this._currentRequest);
-
-  // Abort this request
   this.emit("abort");
-  this.removeAllListeners();
 };
 
 // Writes buffered data to the current native request
