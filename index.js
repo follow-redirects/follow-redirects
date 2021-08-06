@@ -356,7 +356,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
     // Drop the Host header, as the redirect might lead to a different host
     var previousHostName = removeMatchingHeaders(/^host$/i, this._options.headers) ||
       url.parse(this._currentUrl).hostname;
-
+    
+    // We need utf-8
+    location = encodeURI(Buffer.from(location, 'binary').toString());
+    
     // Create the redirected request
     var redirectUrl = url.resolve(this._currentUrl, location);
     debug("redirecting to", redirectUrl);
