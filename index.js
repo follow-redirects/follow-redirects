@@ -358,7 +358,12 @@ RedirectableRequest.prototype._processResponse = function (response) {
       url.parse(this._currentUrl).hostname;
 
     // Create the redirected request
-    var redirectUrl = url.resolve(this._currentUrl, location);
+
+    // from https://github.com/sindresorhus/got/blob/780550124d0de468c1c0704b26673b1d21de86d3/source/core/index.ts#L741
+    // We need this in order to support UTF-8
+    var redirectBuffer = Buffer.from(response.headers.location, "binary").toString();
+    var redirectUrl = url.resolve(this._currentUrl, redirectBuffer);
+    
     debug("redirecting to", redirectUrl);
     this._isRedirect = true;
     var redirectUrlParts = url.parse(redirectUrl);

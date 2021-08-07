@@ -261,29 +261,16 @@ describe("follow-redirects", function () {
       });
   });
 
-  it("emits an error on redirects with an invalid location", function () {
-    if (nodeMajorVersion < 10) {
-      this.skip();
-    }
-
-    app.get("/a", function (req, res) {
-      // Explictly send response with invalid Location header
-      res.socket.write("HTTP/1.1 301 Moved Permanently\n");
-      res.socket.write("Location: http://смольный-институт.рф\n");
-      res.socket.write("\n");
-      res.socket.end();
-    });
-
+  it("redirect response contains UTF-8 with binary encoding", function () {
+    app.get("/utf8-url-%C3%A1%C3%A9", sendsJson({ a: "b" }));
+    app.get("/redirect-with-utf8-binary", redirectsTo("/utf8-url-áé"));
     return server.start(app)
-      .then(asPromise(function (resolve) {
-        http.get("http://localhost:3600/a").on("error", resolve);
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/redirect-with-utf8-binary", concatJson(resolve, reject)).on("error", reject);
       }))
-      .then(function (error) {
-        assert(error instanceof Error);
-        assert.equal(error.code, "ERR_FR_REDIRECTION_FAILURE");
-        assert.equal(error.message, "Redirected request failed: Request path contains unescaped characters");
-        assert(error.cause instanceof Error);
-        assert.equal(error.cause.code, "ERR_UNESCAPED_CHARACTERS");
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/utf8-url-%C3%A1%C3%A9");
       });
   });
 
