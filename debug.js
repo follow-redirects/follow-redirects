@@ -7,8 +7,11 @@ module.exports = function () {
       debug = require("debug")("follow-redirects");
     }
     catch (error) {
-      debug = function () { /* */ };
+      // No errors
     }
+  }
+  if (typeof debug !== "function") {
+    debug = function () { /* */ };
   }
   debug.apply(null, arguments);
 };
