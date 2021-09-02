@@ -171,7 +171,7 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
 
   // Prevent a timeout from triggering
   function clearTimer() {
-    clearTimeout(this._timeout);
+    clearTimeout(self._timeout);
     if (callback) {
       self.removeListener("timeout", callback);
     }
