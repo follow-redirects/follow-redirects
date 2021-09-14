@@ -356,6 +356,25 @@ describe("follow-redirects", function () {
         });
     });
 
+    it("handles errors occuring before a socket is established", function () {
+      app.get("/redirect", redirectsTo("http://localhost:3602/b"));
+
+      var req;
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          req = http.get("http://localhost:3600/redirect", reject);
+          req.setTimeout(3000, function () {
+            throw new Error("should not have timed out");
+          });
+          req.emit("error", new Error());
+          req.on("error", resolve);
+        }))
+        .then(function (error) {
+          assert.equal(error.code, "ECONNREFUSED");
+          clock.tick(5000);
+        });
+    });
+
     it("sets a timeout when the socket already exists", function () {
       app.get("/timeout", delay(clock, 5000, sendsJson({ timed: "out" })));
 
