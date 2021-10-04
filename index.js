@@ -360,20 +360,25 @@ RedirectableRequest.prototype._processResponse = function (response) {
       removeMatchingHeaders(/^content-/i, this._options.headers);
     }
 
-    // Prefer previous host from Host header
-    var previousHost = getMatchingHeader(/^host$/i, this._options.headers) ||
-      url.parse(this._currentUrl).host;
+    var currentUrlParts = url.parse(this._currentUrl);
+    // Drop the Host header, as the redirect might lead to a different host
+    var previousHost = removeMatchingHeaders(/^host$/i, this._options.headers) ||
+      currentUrlParts.host;
+
+    // If the redirect is relative, carry over the host of the last request from host header
+    var previousHostUrl = !url.parse(location).host ?
+      url.format(Object.assign({}, currentUrlParts, { host: previousHost })) :
+      this._currentUrl;
 
     // Create the redirected request
-    var redirectUrl = url.resolve(this._currentUrl, location);
+    var redirectUrl = url.resolve(previousHostUrl, location);
     debug("redirecting to", redirectUrl);
     this._isRedirect = true;
     var redirectUrlParts = url.parse(redirectUrl);
     Object.assign(this._options, redirectUrlParts);
 
-    // Drop the Host & Authorization header if redirecting to another host
-    if (redirectUrlParts.host !== previousHost && url.parse(location).host) {
-      removeMatchingHeaders(/^host$/i, this._options.headers);
+    // Drop the Authorization header if redirecting to another host
+    if (redirectUrlParts.host !== previousHost) {
       removeMatchingHeaders(/^authorization$/i, this._options.headers);
     }
 
@@ -501,16 +506,6 @@ function urlToOptions(urlObject) {
     options.port = Number(urlObject.port);
   }
   return options;
-}
-
-function getMatchingHeader(regex, headers) {
-  var lastValue;
-  for (var header in headers) {
-    if (regex.test(header)) {
-      lastValue = headers[header];
-    }
-  }
-  return lastValue;
 }
 
 function removeMatchingHeaders(regex, headers) {
