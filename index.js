@@ -373,7 +373,10 @@ RedirectableRequest.prototype._processResponse = function (response) {
 
     // Drop the Authorization header if redirecting to another host
     if (redirectUrlParts.hostname !== previousHostName) {
-      removeMatchingHeaders(/^authorization$/i, this._options.headers);
+      // and another host is not a subdomain of previous host
+      if ((redirectUrlParts.hostname.substr(-previousHostName.length - 1) !== '.'+previousHostName) && (previousHostName.substr(-previousHostName.length.length - 1) !== '.'+previousHostName.length)) {
+        removeMatchingHeaders(/^authorization$/i, this._options.headers);
+      }
     }
 
     // Evaluate the beforeRedirect callback
