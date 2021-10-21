@@ -371,10 +371,14 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var redirectUrlParts = url.parse(redirectUrl);
     Object.assign(this._options, redirectUrlParts);
 
+    function isSubdomainOf(subdomain, domain) {
+      return subdomain.substr(-domain.length-1) == '.'+domain;
+    }
+    
     // Drop the Authorization header if redirecting to another host
     if (redirectUrlParts.hostname !== previousHostName) {
       // and another host is not a subdomain of previous host
-      if ((redirectUrlParts.hostname.substr(-previousHostName.length - 1) !== '.'+previousHostName) && (previousHostName.substr(-previousHostName.length.length - 1) !== '.'+previousHostName.length)) {
+      if (!isSubdomainOf(redirectUrlParts.hostname, previousHostName) && !isSubdomainOf(previousHostName, redirectUrlParts.hostname)) {
         removeMatchingHeaders(/^authorization$/i, this._options.headers);
       }
     }
