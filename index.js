@@ -169,10 +169,16 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
 
   // Stops a timeout from triggering
   function clearTimer() {
+    // Clear the timeout
     if (self._timeout) {
       clearTimeout(self._timeout);
       self._timeout = null;
     }
+
+    // Clean up all attached listeners
+    self.removeListener("abort", clearTimer);
+    self.removeListener("error", clearTimer);
+    self.removeListener("response", clearTimer);
     if (callback) {
       self.removeListener("timeout", callback);
     }
@@ -196,8 +202,9 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
 
   // Clean up on events
   this.on("socket", destroyOnTimeout);
-  this.once("response", clearTimer);
-  this.once("error", clearTimer);
+  this.on("abort", clearTimer);
+  this.on("error", clearTimer);
+  this.on("response", clearTimer);
 
   return this;
 };
