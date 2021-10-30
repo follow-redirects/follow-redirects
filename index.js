@@ -360,25 +360,24 @@ RedirectableRequest.prototype._processResponse = function (response) {
       removeMatchingHeaders(/^content-/i, this._options.headers);
     }
 
-    var currentUrlParts = url.parse(this._currentUrl);
     // Drop the Host header, as the redirect might lead to a different host
-    var previousHost = removeMatchingHeaders(/^host$/i, this._options.headers) ||
-      currentUrlParts.host;
+    var currentHostHeader = removeMatchingHeaders(/^host$/i, this._options.headers);
 
-    // If the redirect is relative, carry over the host of the last request from host header
-    var previousHostUrl = !url.parse(location).host ?
-      url.format(Object.assign({}, currentUrlParts, { host: previousHost })) :
-      this._currentUrl;
+    // If the redirect is relative, carry over the host of the last request
+    var currentUrlParts = url.parse(this._currentUrl);
+    var currentHost = currentHostHeader || currentUrlParts.host;
+    var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
+      url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
     // Create the redirected request
-    var redirectUrl = url.resolve(previousHostUrl, location);
+    var redirectUrl = url.resolve(currentUrl, location);
     debug("redirecting to", redirectUrl);
     this._isRedirect = true;
     var redirectUrlParts = url.parse(redirectUrl);
     Object.assign(this._options, redirectUrlParts);
 
     // Drop the Authorization header if redirecting to another host
-    if (redirectUrlParts.host !== previousHost) {
+    if (redirectUrlParts.host !== currentHost) {
       removeMatchingHeaders(/^authorization$/i, this._options.headers);
     }
 
@@ -512,7 +511,7 @@ function removeMatchingHeaders(regex, headers) {
   var lastValue;
   for (var header in headers) {
     if (regex.test(header)) {
-      lastValue = headers[header];
+      lastValue = headers[header].toString().trim();
       delete headers[header];
     }
   }
