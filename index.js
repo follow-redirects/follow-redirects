@@ -18,7 +18,7 @@ events.forEach(function (event) {
 // Error types with codes
 var RedirectionError = createErrorType(
   "ERR_FR_REDIRECTION_FAILURE",
-  ""
+  "Redirected request failed"
 );
 var TooManyRedirectsError = createErrorType(
   "ERR_FR_TOO_MANY_REDIRECTS",
@@ -376,8 +376,17 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
       url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
+    // Determine the URL of the redirection
+    var redirectUrl;
+    try {
+      redirectUrl = url.resolve(currentUrl, location);
+    }
+    catch (cause) {
+      this.emit("error", new RedirectionError(cause));
+      return;
+    }
+
     // Create the redirected request
-    var redirectUrl = url.resolve(currentUrl, location);
     debug("redirecting to", redirectUrl);
     this._isRedirect = true;
     var redirectUrlParts = url.parse(redirectUrl);
@@ -406,9 +415,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
       this._performRequest();
     }
     catch (cause) {
-      var error = new RedirectionError("Redirected request failed: " + cause.message);
-      error.cause = cause;
-      this.emit("error", error);
+      this.emit("error", new RedirectionError(cause));
     }
   }
   else {
@@ -526,9 +533,15 @@ function removeMatchingHeaders(regex, headers) {
 }
 
 function createErrorType(code, defaultMessage) {
-  function CustomError(message) {
+  function CustomError(cause) {
     Error.captureStackTrace(this, this.constructor);
-    this.message = message || defaultMessage;
+    if (!cause) {
+      this.message = defaultMessage;
+    }
+    else {
+      this.message = defaultMessage + ": " + cause.message;
+      this.cause = cause;
+    }
   }
   CustomError.prototype = new Error();
   CustomError.prototype.constructor = CustomError;

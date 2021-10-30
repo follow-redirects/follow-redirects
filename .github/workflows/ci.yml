@@ -34,14 +34,14 @@ jobs:
           - '15.x'
           - '16.0'
           - '16.x'
+          - '17.0'
+          - '17.x'
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
       - uses: actions/checkout@v2
-      - if: ${{ matrix.node-version == '4.x' || matrix.node-version == '6.0' }}
-        run: npm install mocha@5.0.0 eslint@4.19.1 esquery@1.0.0 nyc@11.8.0
       - run: npm install
       - if: ${{ matrix.node-version == '4.x' }}
         run: npm install mocha@5.0.0 eslint@4.19.1 esquery@1.0.0 nyc@11.8.0
