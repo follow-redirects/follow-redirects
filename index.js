@@ -377,7 +377,14 @@ RedirectableRequest.prototype._processResponse = function (response) {
       url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
     // Create the redirected request
-    var redirectUrl = url.resolve(currentUrl, location);
+    var redirectUrl;
+    try {
+      redirectUrl = url.resolve(currentUrl, location);
+    }
+    catch (err) {
+      this.emit("error", err);
+      return;
+    }
     debug("redirecting to", redirectUrl);
     this._isRedirect = true;
     var redirectUrlParts = url.parse(redirectUrl);

@@ -29,11 +29,11 @@ describe("follow-redirects", function () {
     return {
       app: app,
       protocol: "https",
-      cert: fs.readFileSync(path.resolve(__dirname, "assets/TestServer.crt")),
-      key: fs.readFileSync(path.resolve(__dirname, "assets/TestServer.pem")),
+      cert: fs.readFileSync(path.resolve(__dirname, "assets/localhost.crt")),
+      key: fs.readFileSync(path.resolve(__dirname, "assets/localhost.key")),
     };
   }
-  var ca = fs.readFileSync(path.resolve(__dirname, "assets/TestCA.crt"));
+  var ca = fs.readFileSync(path.resolve(__dirname, "assets/ca.crt"));
 
   var app;
   var app2;
@@ -280,10 +280,38 @@ describe("follow-redirects", function () {
       }))
       .then(function (error) {
         assert(error instanceof Error);
-        assert.equal(error.code, "ERR_FR_REDIRECTION_FAILURE");
-        assert.equal(error.message, "Redirected request failed: Request path contains unescaped characters");
-        assert(error.cause instanceof Error);
-        assert.equal(error.cause.code, "ERR_UNESCAPED_CHARACTERS");
+        switch (error.code) {
+        // Node 17+
+        case "ERR_INVALID_URL":
+          assert.equal(error.message, "Invalid URL");
+          break;
+        // Older Node versions
+        case "ERR_FR_REDIRECTION_FAILURE":
+          assert.equal(error.message, "Redirected request failed: Request path contains unescaped characters");
+          assert(error.cause instanceof Error);
+          assert.equal(error.cause.code, "ERR_UNESCAPED_CHARACTERS");
+          break;
+        default:
+          throw new Error("Unexpected error code " + error.code);
+        }
+      });
+  });
+
+  it("emits an error whem url.resolve fails", function () {
+    app.get("/a", redirectsTo("/b"));
+    var urlResolve = url.resolve;
+    var myError = new Error();
+    url.resolve = function () {
+      throw myError;
+    };
+
+    return server.start(app)
+      .then(asPromise(function (resolve) {
+        http.get("http://localhost:3600/a").on("error", resolve);
+      }))
+      .then(function (error) {
+        url.resolve = urlResolve;
+        assert.equal(error, myError);
       });
   });
 
