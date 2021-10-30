@@ -1344,6 +1344,62 @@ describe("follow-redirects", function () {
         });
     });
 
+    it("keeps the header when redirected to the same host via header", function () {
+      app.get("/a", redirectsTo(302, "http://localhost:3600/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      var opts = url.parse("http://127.0.0.1:3600/a");
+      opts.headers = {
+        host: "localhost:3600",
+        authorization: "bearer my-token-1234",
+      };
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body.host, "localhost:3600");
+          assert.equal(body.authorization, "bearer my-token-1234");
+        });
+    });
+
+    it("keeps the header when redirected to a subdomain", function () {
+      app.get("/a", redirectsTo(302, "http://sub.localhost:3600/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.headers = {
+        authorization: "bearer my-token-1234",
+      };
+      // Intercept the hostname, as no DNS entry is defined for it
+      opts.beforeRedirect = function (options) {
+        assert.equal(options.hostname, "sub.localhost");
+        options.hostname = "localhost";
+      };
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body.host, "localhost:3600");
+          assert.equal(body.authorization, "bearer my-token-1234");
+        });
+    });
+
     it("drops the header when redirected to a different host (same hostname and different port)", function () {
       app.get("/a", redirectsTo(302, "http://localhost:3600/b"));
       app.get("/b", function (req, res) {
