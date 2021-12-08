@@ -1320,6 +1320,32 @@ describe("follow-redirects", function () {
   });
 
   describe("when the client passes an Authorization header", function () {
+    it("ignores it when null", function () {
+      app.get("/a", redirectsTo(302, "http://localhost:3600/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      var opts = url.parse("http://127.0.0.1:3600/a");
+      opts.headers = {
+        host: "localhost",
+        authorization: null,
+      };
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body.host, "localhost:3600");
+          assert.equal(body.authorization, undefined);
+        });
+    });
+
     it("keeps the header when redirected to the same host", function () {
       app.get("/a", redirectsTo(302, "/b"));
       app.get("/b", function (req, res) {

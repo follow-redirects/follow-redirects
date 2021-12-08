@@ -525,11 +525,12 @@ function removeMatchingHeaders(regex, headers) {
   var lastValue;
   for (var header in headers) {
     if (regex.test(header)) {
-      lastValue = headers[header].toString().trim();
+      lastValue = headers[header];
       delete headers[header];
     }
   }
-  return lastValue;
+  return (lastValue === null || typeof lastValue === "undefined") ?
+    undefined : String(lastValue).trim();
 }
 
 function createErrorType(code, defaultMessage) {
