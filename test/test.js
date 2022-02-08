@@ -1522,6 +1522,36 @@ describe("follow-redirects", function () {
           });
       });
     });
+
+    it("drops the header when redirected to a different scheme", function () {
+      app.get("/a", redirectsTo(302, "http://localhost:3601/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      var opts = url.parse("https://localhost:3601/a");
+      opts.ca = ca;
+      opts.headers = {};
+      opts.headers[header] = "the header value";
+
+      // Intercept the scheme
+      opts.beforeRedirect = function (options) {
+        assert.equal(options.protocol, "http:");
+        options.protocol = "https:";
+      };
+
+      return server.start(httpsOptions(app))
+        .then(asPromise(function (resolve, reject) {
+          https.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body[header.toLowerCase()], undefined);
+        });
+    });
   });
 
   describe("when the followRedirects option is set to false", function () {
