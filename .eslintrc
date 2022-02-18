@@ -12,7 +12,7 @@
     array-callback-return: "error",
     block-scoped-var: "error",
     class-methods-use-this: "error",
-    complexity: "error",
+    complexity: "off",
     consistent-return: "error",
     curly: "error",
     default-case: "error",

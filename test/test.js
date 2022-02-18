@@ -1523,7 +1523,36 @@ describe("follow-redirects", function () {
       });
     });
 
-    it("drops the header when redirected to a different scheme", function () {
+    it("keeps the header when redirected from HTTP to HTTPS", function () {
+      app.get("/a", redirectsTo(302, "https://localhost:3600/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      var opts = url.parse("http://localhost:3600/a");
+      opts.headers = {};
+      opts.headers[header] = "the header value";
+
+      // Intercept the scheme
+      opts.beforeRedirect = function (options) {
+        assert.equal(options.protocol, "https:");
+        options.protocol = "http:";
+      };
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body[header.toLowerCase()], "the header value");
+        });
+    });
+
+    it("drops the header when redirected from HTTPS to HTTP", function () {
       app.get("/a", redirectsTo(302, "http://localhost:3601/b"));
       app.get("/b", function (req, res) {
         res.end(JSON.stringify(req.headers));

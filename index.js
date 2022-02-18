@@ -403,9 +403,12 @@ RedirectableRequest.prototype._processResponse = function (response) {
   var redirectUrlParts = url.parse(redirectUrl);
   Object.assign(this._options, redirectUrlParts);
 
-  // Drop confidential headers when redirecting to another scheme:domain
-  if (redirectUrlParts.protocol !== currentUrlParts.protocol ||
-     !isSameOrSubdomain(redirectUrlParts.host, currentHost)) {
+  // Drop confidential headers when redirecting to a less secure protocol
+  // or to a different domain that is not a superdomain
+  if (redirectUrlParts.protocol !== currentUrlParts.protocol &&
+     redirectUrlParts.protocol !== "https:" ||
+     redirectUrlParts.host !== currentHost &&
+     !isSubdomain(redirectUrlParts.host, currentHost)) {
     removeMatchingHeaders(/^(?:authorization|cookie)$/i, this._options.headers);
   }
 
@@ -561,10 +564,7 @@ function abortRequest(request) {
   request.abort();
 }
 
-function isSameOrSubdomain(subdomain, domain) {
-  if (subdomain === domain) {
-    return true;
-  }
+function isSubdomain(subdomain, domain) {
   const dot = subdomain.length - domain.length - 1;
   return dot > 0 && subdomain[dot] === "." && subdomain.endsWith(domain);
 }
