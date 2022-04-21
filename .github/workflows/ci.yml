@@ -36,6 +36,8 @@ jobs:
           - '16.x'
           - '17.0'
           - '17.x'
+          - '18.0'
+          - '18.x'
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
@@ -48,7 +50,7 @@ jobs:
       - run: npm test
       - run: node_modules/.bin/nyc --reporter=text-lcov node_modules/.bin/mocha | tee lcov.info
       - uses: coverallsapp/github-action@master
-        if: ${{ matrix.node-version == '14.0' }}
+        if: ${{ matrix.node-version == '16.0' }}
         with:
           github-token: ${{ secrets.github_token }}
           flag-name: run-${{ matrix.node-version }}
