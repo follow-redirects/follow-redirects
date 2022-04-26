@@ -1581,6 +1581,67 @@ describe("follow-redirects", function () {
           assert.equal(body[header.toLowerCase()], undefined);
         });
     });
+
+    it("passes the redirect status code to beforeRedirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c", 301));
+      app.get("/c", redirectsTo("/d", 302));
+      app.get("/d", redirectsTo("/e", 303));
+      app.get("/e", redirectsTo("/f", 307));
+      app.get("/f", redirectsTo("/g", 308));
+      app.get("/g", sendsJson({ a: "b" }));
+
+      const statusCodes = [];
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function (_, response) {
+              statusCodes.push(response.statusCode);
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/g");
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(statusCodes, [302, 301, 302, 303, 307, 308]);
+        });
+    });
+
+    it("passes the original request URL to beforeRedirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", sendsJson({ a: "b" }));
+
+      const urlChain = [];
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            beforeRedirect: function (_, response) {
+              urlChain.push(response.requestUrl);
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/c");
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(urlChain, [
+            "http://localhost:3600/a",
+            "http://localhost:3600/b",
+          ]);
+        });
+    });
   });
 
   describe("when the followRedirects option is set to false", function () {

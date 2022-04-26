@@ -414,7 +414,11 @@ RedirectableRequest.prototype._processResponse = function (response) {
 
   // Evaluate the beforeRedirect callback
   if (typeof this._options.beforeRedirect === "function") {
-    var responseDetails = { headers: response.headers };
+    var responseDetails = {
+      headers: response.headers,
+      statusCode: statusCode,
+      requestUrl: currentUrl,
+    };
     try {
       this._options.beforeRedirect.call(null, this._options, responseDetails);
     }
