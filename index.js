@@ -366,6 +366,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // care for methods not known to be safe, […]
   // RFC7231§6.4.2–3: For historical reasons, a user agent MAY change
   // the request method from POST to GET for the subsequent request.
+  var originalRequestMethod = this._options.method;
   if ((statusCode === 301 || statusCode === 302) && this._options.method === "POST" ||
       // RFC7231§6.4.4: The 303 (See Other) status code indicates that
       // the server is redirecting the user agent to a different resource […]
@@ -417,6 +418,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var responseDetails = {
       headers: response.headers,
       statusCode: statusCode,
+      requestMethod: originalRequestMethod,
       requestUrl: currentUrl,
     };
     try {

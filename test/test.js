@@ -1613,6 +1613,34 @@ describe("follow-redirects", function () {
         });
     });
 
+    it("passes the request method to beforeRedirect", function () {
+      app.post("/a", redirectsTo("/b", 308));
+      app.post("/b", redirectsTo("/c", 301));
+      app.get("/c", redirectsTo("/d", 301));
+      app.get("/d", sendsJson({ a: "b" }));
+
+      const requestMethods = [];
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "POST",
+            beforeRedirect: function (_, response) {
+              requestMethods.push(response.requestMethod);
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/d");
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(requestMethods, ["POST", "POST", "GET"]);
+        });
+    });
+
     it("passes the original request URL to beforeRedirect", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
