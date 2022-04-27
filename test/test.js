@@ -1628,8 +1628,8 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "POST",
-            beforeRedirect: function (_, response) {
-              requestMethods.push(response.requestMethod);
+            beforeRedirect: function (_, __, request) {
+              requestMethods.push(request.method);
             },
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
@@ -1655,8 +1655,8 @@ describe("follow-redirects", function () {
             port: 3600,
             path: "/a",
             method: "GET",
-            beforeRedirect: function (_, response) {
-              urlChain.push(response.requestUrl);
+            beforeRedirect: function (_, __, request) {
+              urlChain.push(request.url);
             },
           };
           http.get(options, concatJson(resolve, reject)).on("error", reject);
