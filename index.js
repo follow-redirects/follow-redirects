@@ -362,6 +362,16 @@ RedirectableRequest.prototype._processResponse = function (response) {
     return;
   }
 
+  // Store the request headers if applicable
+  var requestHeaders;
+  var beforeRedirect = this._options.beforeRedirect;
+  if (beforeRedirect) {
+    requestHeaders = Object.assign({
+      // The Host header was set by nativeProtocol.request
+      Host: response.req.getHeader("host"),
+    }, this._options.headers);
+  }
+
   // RFC7231§6.4: Automatic redirection needs to done with
   // care for methods not known to be safe, […]
   // RFC7231§6.4.2–3: For historical reasons, a user agent MAY change
@@ -414,15 +424,15 @@ RedirectableRequest.prototype._processResponse = function (response) {
   }
 
   // Evaluate the beforeRedirect callback
-  var beforeRedirect = this._options.beforeRedirect;
   if (typeof beforeRedirect === "function") {
     var responseDetails = {
       headers: response.headers,
       statusCode: statusCode,
     };
     var requestDetails = {
-      method: method,
       url: currentUrl,
+      method: method,
+      headers: requestHeaders,
     };
     try {
       beforeRedirect(this._options, responseDetails, requestDetails);

@@ -1641,7 +1641,55 @@ describe("follow-redirects", function () {
         });
     });
 
-    it("passes the original request URL to beforeRedirect", function () {
+    it("passes the request headers to beforeRedirect", function () {
+      app.post("/a", redirectsTo("/b"));
+      app.get("/b", redirectsTo("/c"));
+      app.get("/c", redirectsTo("/d"));
+      app.get("/d", sendsJson({ a: "b" }));
+
+      const headerChain = [];
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "POST",
+            headers: {
+              "X-Foo": "bar",
+            },
+            beforeRedirect: function (optionz, __, request) {
+              optionz.headers["X-Redirect"] = `${request.url} => ${optionz.href}`;
+
+              headerChain.push(request.headers);
+            },
+          };
+          http.get(options, concatJson(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.deepEqual(res.responseUrl, "http://localhost:3600/d");
+          assert.deepEqual(res.parsedJson, { a: "b" });
+          assert.deepEqual(headerChain, [
+            {
+              "Host": "localhost:3600",
+              "X-Foo": "bar",
+            },
+            {
+              "Host": "localhost:3600",
+              "X-Foo": "bar",
+              "X-Redirect": "http://localhost:3600/a => http://localhost:3600/b",
+            },
+            {
+              "Host": "localhost:3600",
+              "X-Foo": "bar",
+              "X-Redirect": "http://localhost:3600/b => http://localhost:3600/c",
+            },
+          ]);
+        });
+    });
+
+    it("passes the request URL to beforeRedirect", function () {
       app.get("/a", redirectsTo("/b"));
       app.get("/b", redirectsTo("/c"));
       app.get("/c", sendsJson({ a: "b" }));
