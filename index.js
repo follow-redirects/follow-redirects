@@ -125,10 +125,10 @@ RedirectableRequest.prototype.end = function (data, encoding, callback) {
     var self = this;
     var currentRequest = this._currentRequest;
     this.write(data, encoding, function () {
-      self._ended = true;
+      this._ending = true;
     });
+    self._ended = true;
     currentRequest.end(null, null, callback);
-    this._ending = true;
   }
 };
 
