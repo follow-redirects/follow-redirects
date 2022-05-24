@@ -17,6 +17,7 @@ var delay = util.delay;
 var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
 var asPromise = util.asPromise;
+var proxy = util.proxy;
 
 var testFile = path.resolve(__dirname, "assets/input.txt");
 var testFileBuffer = fs.readFileSync(testFile);
@@ -297,7 +298,7 @@ describe("follow-redirects", function () {
       });
   });
 
-  it("emits an error whem url.resolve fails", function () {
+  it("emits an error when url.resolve fails", function () {
     app.get("/a", redirectsTo("/b"));
     var urlResolve = url.resolve;
     url.resolve = function () {
@@ -2078,6 +2079,45 @@ describe("follow-redirects", function () {
           assert.strictEqual(res.parsedJson.testheader, "itsAtest/b");
           assert.deepEqual(res.responseUrl, "http://localhost:3600/b");
         });
+    });
+  });
+
+  describe("when request is going through an HTTP proxy (without a tunnel)", function () {
+    [
+      { redirectType: "absolute", redirectUrl: "http://localhost:3600/b" },
+      { redirectType: "relative", redirectUrl: "/b" },
+    ].forEach(function (testCase) {
+      it("redirects to proper URL when Location header is " + testCase.redirectType, function () {
+        app.get("/a", redirectsTo(testCase.redirectUrl));
+        app.get("/b", sendsJson({ good: "yes" }));
+        app2.port = 3601;
+        app2.all("*", proxy("localhost:3601"));
+
+        function setProxy(opts) {
+          // assuming opts is a url.parse result
+          // Update path and Host header
+          opts.path = opts.href;
+          opts.pathname = opts.href;
+
+          // Update port and host to target proxy host
+          opts.port = 3601;
+          opts.host = opts.hostname + ":" + opts.port;
+
+          // redirected requests use proxy too
+          opts.beforeRedirect = setProxy;
+        }
+        return Promise.all([server.start(app), server.start(app2)])
+          .then(asPromise(function (resolve, reject) {
+            var opts = Object.assign({}, url.parse("http://localhost:3600/a"));
+            setProxy(opts);
+
+            http.get(opts, concatJson(resolve, reject)).on("error", reject);
+          }))
+          .then(function (res) {
+            assert.deepEqual(res.parsedJson, { good: "yes" });
+            assert.deepEqual(res.responseUrl, "http://localhost:3600/b");
+          });
+      });
     });
   });
 });

@@ -1,4 +1,7 @@
 var concat = require("concat-stream");
+var http = require("http");
+var https = require("https");
+var url = require("url");
 
 function redirectsTo() {
   var args = Array.prototype.slice.call(arguments);
@@ -42,10 +45,31 @@ function asPromise(cb) {
   };
 }
 
+function proxy(proxyHost) {
+  return function (req, res) {
+    var upstreamUrl = url.parse(req.originalUrl);
+    if (upstreamUrl.host === proxyHost) {
+      res.writeHead(400, "Bad request");
+      res.write(JSON.stringify({ bad: "detected proxy recursion" }));
+      res.end();
+    }
+    else {
+      var transport = /https:?/.test(upstreamUrl.protocol) ? https : http;
+      upstreamUrl.headers = req.headers;
+      var upstreamReq = transport.request(upstreamUrl, function (upstreamRes) {
+        res.writeHead(upstreamRes.statusCode, upstreamRes.statusMessage, upstreamRes.headers);
+        upstreamRes.pipe(res);
+      });
+      upstreamReq.end();
+    }
+  };
+}
+
 module.exports = {
   asPromise: asPromise,
   concatJson: concatJson,
   delay: delay,
+  proxy: proxy,
   redirectsTo: redirectsTo,
   sendsJson: sendsJson,
 };
