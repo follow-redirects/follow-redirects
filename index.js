@@ -278,8 +278,8 @@ RedirectableRequest.prototype._performRequest = function () {
   var request = this._currentRequest =
         nativeProtocol.request(this._options, this._onNativeResponse);
   request._redirectable = this;
-  for (var e = 0; e < events.length; e++) {
-    request.on(events[e], eventHandlers[events[e]]);
+  for (var event of events) {
+    request.on(event, eventHandlers[event]);
   }
 
   // RFC7230§5.3.1: When making a request directly to an origin server, […]
@@ -581,8 +581,8 @@ function createErrorType(code, defaultMessage) {
 }
 
 function abortRequest(request) {
-  for (var e = 0; e < events.length; e++) {
-    request.removeListener(events[e], eventHandlers[events[e]]);
+  for (var event of events) {
+    request.removeListener(event, eventHandlers[event]);
   }
   request.on("error", noop);
   request.abort();
