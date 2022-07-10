@@ -269,9 +269,9 @@ describe("follow-redirects", function () {
 
     app.get("/a", function (req, res) {
       // Explictly send response with invalid Location header
-      res.socket.write("HTTP/1.1 301 Moved Permanently\n");
-      res.socket.write("Location: http://смольный-институт.рф\n");
-      res.socket.write("\n");
+      res.socket.write("HTTP/1.1 301 Moved Permanently\r\n");
+      res.socket.write("Location: http://смольный-институт.рф\r\n");
+      res.socket.write("\r\n");
       res.socket.end();
     });
 
@@ -317,9 +317,9 @@ describe("follow-redirects", function () {
 
   it("emits an error when the request fails for another reason", function () {
     app.get("/a", function (req, res) {
-      res.socket.write("HTTP/1.1 301 Moved Permanently\n");
-      res.socket.write("Location: other\n");
-      res.socket.write("\n");
+      res.socket.write("HTTP/1.1 301 Moved Permanently\r\n");
+      res.socket.write("Location: other\r\n");
+      res.socket.write("\r\n");
       res.socket.end();
     });
 
