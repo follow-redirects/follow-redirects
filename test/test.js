@@ -197,6 +197,20 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("http.get with relative URL path", function () {
+    var error = null;
+    try {
+      http.get("/relative");
+    }
+    catch (e) {
+      error = e;
+    }
+    assert(error instanceof Error);
+    assert(error instanceof TypeError);
+    assert.equal(error.code, "ERR_INVALID_URL");
+    assert.equal(error.input, "/relative");
+  });
+
   it("should return with the original status code if the response does not contain a location header", function () {
     app.get("/a", function (req, res) {
       res.status(307).end();
