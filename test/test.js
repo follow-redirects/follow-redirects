@@ -1332,6 +1332,29 @@ describe("follow-redirects", function () {
           assert.equal(body.host, "localhost:3600");
         });
     });
+
+    it("defaults to localhost for relative redirect if no host given", function () {
+      app.get("/a", redirectsTo(302, "/b"));
+      app.get("/b", function (req, res) {
+        res.write(JSON.stringify(req.headers));
+        req.pipe(res); // will invalidate JSON if non-empty
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var opts = { port: 3600, path: "/a" };
+          http.get(opts, resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          assert.deepEqual(res.statusCode, 200);
+          assert(res.responseUrl.endsWith("/b"));
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert(body.host.endsWith(":3600"));
+        });
+    });
   });
 
   [
