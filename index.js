@@ -75,10 +75,10 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
   }
 
   // Validate input and shift parameters if necessary
-  if (!(typeof data === "string" || typeof data === "object" && ("length" in data))) {
+  if (!isString(data) && !isBuffer(data)) {
     throw new TypeError("data should be a string, Buffer or Uint8Array");
   }
-  if (typeof encoding === "function") {
+  if (isFunction(encoding)) {
     callback = encoding;
     encoding = null;
   }
@@ -107,11 +107,11 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
 // Ends the current native request
 RedirectableRequest.prototype.end = function (data, encoding, callback) {
   // Shift parameters if necessary
-  if (typeof data === "function") {
+  if (isFunction(data)) {
     callback = data;
     data = encoding = null;
   }
-  else if (typeof encoding === "function") {
+  else if (isFunction(encoding)) {
     callback = encoding;
     encoding = null;
   }
@@ -429,7 +429,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   }
 
   // Evaluate the beforeRedirect callback
-  if (typeof beforeRedirect === "function") {
+  if (isFunction(beforeRedirect)) {
     var responseDetails = {
       headers: response.headers,
       statusCode: statusCode,
@@ -476,7 +476,7 @@ function wrap(protocols) {
     // Executes a request, following redirects
     function request(input, options, callback) {
       // Parse parameters
-      if (typeof input === "string") {
+      if (isString(input)) {
         var urlStr = input;
         try {
           input = urlToOptions(new URL(urlStr));
@@ -494,7 +494,7 @@ function wrap(protocols) {
         options = input;
         input = { protocol: protocol };
       }
-      if (typeof options === "function") {
+      if (isFunction(options)) {
         callback = options;
         options = null;
       }
@@ -591,6 +591,18 @@ function abortRequest(request) {
 function isSubdomain(subdomain, domain) {
   const dot = subdomain.length - domain.length - 1;
   return dot > 0 && subdomain[dot] === "." && subdomain.endsWith(domain);
+}
+
+function isString(value) {
+  return typeof value === "string" || value instanceof String;
+}
+
+function isFunction(value) {
+  return typeof value === "function";
+}
+
+function isBuffer(value) {
+  return typeof value === "object" && ("length" in value);
 }
 
 // Exports
