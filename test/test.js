@@ -8,7 +8,7 @@ var http = followRedirects.http;
 var https = followRedirects.https;
 var fs = require("fs");
 var path = require("path");
-var lolex = require("lolex");
+var lolex = require("@sinonjs/fake-timers");
 
 var util = require("./util");
 var concat = require("concat-stream");
