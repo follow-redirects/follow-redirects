@@ -11,9 +11,8 @@
     "node": ">=4.0"
   },
   "scripts": {
-    "test": "npm run lint && npm run mocha",
     "lint": "eslint *.js test",
-    "mocha": "nyc mocha"
+    "test": "nyc mocha"
   },
   "repository": {
     "type": "git",
