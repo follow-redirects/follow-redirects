@@ -269,7 +269,7 @@ describe("follow-redirects", function () {
         req._currentRequest.emit("connect", "r", "s", "h");
       }))
       .then(function (args) {
-        req.abort();
+        req.destroy();
         assert.equal(args.response, "r");
         assert.equal(args.socket, "s");
         assert.equal(args.head, "h");
@@ -429,7 +429,7 @@ describe("follow-redirects", function () {
           req.on("socket", function () {
             assert(req.socket instanceof net.Socket);
             req.setTimeout(3000, function () {
-              req.abort();
+              req.destroy();
               resolve();
             });
           });
@@ -466,7 +466,7 @@ describe("follow-redirects", function () {
           });
           req.on("error", reject);
           req.setTimeout(1000, function () {
-            req.abort();
+            req.destroy();
             resolve();
           });
         }));
@@ -485,7 +485,7 @@ describe("follow-redirects", function () {
           });
           req.on("error", reject);
           req.setTimeout(2000, function () {
-            req.abort();
+            req.destroy();
             resolve();
           });
         }));
@@ -505,7 +505,7 @@ describe("follow-redirects", function () {
           var callbacks = 0;
           function timeoutCallback() {
             if (++callbacks === 3) {
-              req.abort();
+              req.destroy();
               resolve(callbacks);
             }
           }
@@ -633,7 +633,7 @@ describe("follow-redirects", function () {
     var req = http.request("http://localhost:3600/a");
     req.setHeader("my-header", "my value");
     assert.equal(req.getHeader("my-header"), "my value");
-    req.abort();
+    req.destroy();
   });
 
   it("should provide removeHeader", function () {
@@ -976,7 +976,7 @@ describe("follow-redirects", function () {
           return;
         }
         finally {
-          req.abort();
+          req.destroy();
         }
         throw new Error("no error");
       });
@@ -1218,7 +1218,7 @@ describe("follow-redirects", function () {
       catch (e) {
         error = e;
       }
-      req.abort();
+      req.destroy();
       assert(error instanceof Error);
       assert(error instanceof TypeError);
       assert.equal(error.message, "data should be a string, Buffer or Uint8Array");
