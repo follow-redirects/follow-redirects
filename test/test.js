@@ -177,6 +177,70 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("http.get to IPv4 address", function () {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", redirectsTo("/c"));
+    app.get("/c", redirectsTo("/d"));
+    app.get("/d", redirectsTo("/e"));
+    app.get("/e", redirectsTo("/f"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://127.0.0.1:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://127.0.0.1:3600/f");
+      });
+  });
+
+  it("http.get to IPv6 address", function () {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", redirectsTo("/c"));
+    app.get("/c", redirectsTo("/d"));
+    app.get("/d", redirectsTo("/e"));
+    app.get("/e", redirectsTo("/f"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://[::1]:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://[::1]:3600/f");
+      });
+  });
+
+  it("http.get redirecting to IPv4 address", function () {
+    app.get("/a", redirectsTo("http://127.0.0.1:3600/b"));
+    app.get("/b", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://127.0.0.1:3600/b");
+      });
+  });
+
+  it("http.get redirecting to IPv6 address", function () {
+    app.get("/a", redirectsTo("http://[::1]:3600/b"));
+    app.get("/b", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://[::1]:3600/b");
+      });
+  });
+
   it("http.get with response event", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
