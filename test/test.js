@@ -364,7 +364,7 @@ describe("follow-redirects", function () {
         switch (error.cause.code) {
         // Node 17+
         case "ERR_INVALID_URL":
-          assert.match(error.message, /^Redirected request failed: Invalid URL/);
+          assert(/^Redirected request failed: Invalid URL/.test(error.message));
           break;
         // Older Node versions
         case "ERR_UNESCAPED_CHARACTERS":

@@ -9,6 +9,20 @@ var debug = require("./debug");
 // Whether to use the native URL object or the legacy url module
 var hasNativeURL = typeof URL !== "undefined";
 
+// URL fields to preserve in copy operations
+var preservedUrlFields = [
+  "auth",
+  "host",
+  "hostname",
+  "href",
+  "path",
+  "pathname",
+  "port",
+  "protocol",
+  "query",
+  "search",
+];
+
 // Create handlers that pass events from native requests
 var events = ["abort", "aborted", "connect", "error", "socket", "timeout"];
 var eventHandlers = Object.create(null);
@@ -423,26 +437,23 @@ RedirectableRequest.prototype._processResponse = function (response) {
   var currentHostHeader = removeMatchingHeaders(/^host$/i, this._options.headers);
 
   // If the redirect is relative, carry over the host of the last request
-  var currentUrlParts = url.parse(this._currentUrl);
+  var currentUrlParts = parseUrl(this._currentUrl);
   var currentHost = currentHostHeader || currentUrlParts.host;
   var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
     url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
-  // Determine the URL of the redirection
-  var redirectUrl = resolveUrl(location, currentUrl);
-
   // Create the redirected request
-  debug("redirecting to", redirectUrl);
+  var redirectUrl = resolveUrl(location, currentUrl);
+  debug("redirecting to", redirectUrl.href);
   this._isRedirect = true;
-  var redirectUrlParts = url.parse(redirectUrl);
-  Object.assign(this._options, redirectUrlParts);
+  spreadUrlObject(redirectUrl, this._options);
 
   // Drop confidential headers when redirecting to a less secure protocol
   // or to a different domain that is not a superdomain
-  if (redirectUrlParts.protocol !== currentUrlParts.protocol &&
-     redirectUrlParts.protocol !== "https:" ||
-     redirectUrlParts.host !== currentHost &&
-     !isSubdomain(redirectUrlParts.host, currentHost)) {
+  if (redirectUrl.protocol !== currentUrlParts.protocol &&
+     redirectUrl.protocol !== "https:" ||
+     redirectUrl.host !== currentHost &&
+     !isSubdomain(redirectUrl.host, currentHost)) {
     removeMatchingHeaders(/^(?:authorization|cookie)$/i, this._options.headers);
   }
 
@@ -486,7 +497,7 @@ function wrap(protocols) {
       if (isString(input)) {
         var parsed;
         try {
-          parsed = urlToOptions(new URL(input));
+          parsed = spreadUrlObject(new URL(input));
         }
         catch (err) {
           /* istanbul ignore next */
@@ -498,7 +509,7 @@ function wrap(protocols) {
         input = parsed;
       }
       else if (hasNativeURL && (input instanceof URL)) {
-        input = urlToOptions(input);
+        input = spreadUrlObject(input);
       }
       else {
         callback = options;
@@ -543,31 +554,34 @@ function wrap(protocols) {
 
 function noop() { /* empty */ }
 
-function resolveUrl(relative, base) {
-  return !hasNativeURL ?
-    /* istanbul ignore next */
-    url.resolve(base, relative) :
-    (new URL(relative, base)).href;
+function parseUrl(string) {
+  /* istanbul ignore next */
+  return hasNativeURL ? new URL(string) : url.parse(string);
 }
 
-// from https://github.com/nodejs/node/blob/master/lib/internal/url.js
-function urlToOptions(urlObject) {
-  var options = {
-    protocol: urlObject.protocol,
-    hostname: urlObject.hostname.startsWith("[") ?
-      /* istanbul ignore next */
-      urlObject.hostname.slice(1, -1) :
-      urlObject.hostname,
-    hash: urlObject.hash,
-    search: urlObject.search,
-    pathname: urlObject.pathname,
-    path: urlObject.pathname + urlObject.search,
-    href: urlObject.href,
-  };
-  if (urlObject.port !== "") {
-    options.port = Number(urlObject.port);
+function resolveUrl(relative, base) {
+  /* istanbul ignore next */
+  return hasNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+}
+
+function spreadUrlObject(urlObject, target) {
+  var spread = target || {};
+  for (var key of preservedUrlFields) {
+    spread[key] = urlObject[key];
   }
-  return options;
+
+  // Fix IPv6 hostname
+  if (spread.hostname.startsWith("[")) {
+    spread.hostname = spread.hostname.slice(1, -1);
+  }
+  // Ensure port is a number
+  if (spread.port !== "") {
+    spread.port = Number(spread.port);
+  }
+  // Concatenate path
+  spread.path = spread.search ? spread.pathname + spread.search : spread.pathname;
+
+  return spread;
 }
 
 function removeMatchingHeaders(regex, headers) {
