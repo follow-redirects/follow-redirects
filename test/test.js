@@ -984,8 +984,12 @@ describe("follow-redirects", function () {
         }))
         .catch(function (error) {
           assert(error instanceof Error);
-          assert(error instanceof TypeError);
-          assert.equal(error.message, "Unsupported protocol about:");
+          assert.equal(error.message, "Redirected request failed: Unsupported protocol about:");
+
+          var cause = error.cause;
+          assert(cause instanceof Error);
+          assert(cause instanceof TypeError);
+          assert.equal(cause.message, "Unsupported protocol about:");
         });
     });
   });
@@ -2153,7 +2157,9 @@ describe("follow-redirects", function () {
         .catch(function (error) {
           assert(!redirected);
           assert(error instanceof Error);
-          assert.equal(error.message, "no redirects!");
+          assert.equal(error.message, "Redirected request failed: no redirects!");
+          assert(error.cause instanceof Error);
+          assert.equal(error.cause.message, "no redirects!");
         });
     });
 

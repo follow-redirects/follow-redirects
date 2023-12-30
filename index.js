@@ -27,7 +27,8 @@ var RedirectionError = createErrorType(
 );
 var TooManyRedirectsError = createErrorType(
   "ERR_FR_TOO_MANY_REDIRECTS",
-  "Maximum number of redirects exceeded"
+  "Maximum number of redirects exceeded",
+  RedirectionError
 );
 var MaxBodyLengthExceededError = createErrorType(
   "ERR_FR_MAX_BODY_LENGTH_EXCEEDED",
@@ -62,7 +63,13 @@ function RedirectableRequest(options, responseCallback) {
   // React to responses of native requests
   var self = this;
   this._onNativeResponse = function (response) {
-    self._processResponse(response);
+    try {
+      self._processResponse(response);
+    }
+    catch (cause) {
+      self.emit("error", cause instanceof RedirectionError ?
+        cause : new RedirectionError({ cause: cause }));
+    }
   };
 
   // Perform the first request
@@ -280,8 +287,7 @@ RedirectableRequest.prototype._performRequest = function () {
   var protocol = this._options.protocol;
   var nativeProtocol = this._options.nativeProtocols[protocol];
   if (!nativeProtocol) {
-    this.emit("error", new TypeError("Unsupported protocol " + protocol));
-    return;
+    throw new TypeError("Unsupported protocol " + protocol);
   }
 
   // If specified, use the agent corresponding to the protocol
@@ -380,8 +386,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // RFC7231§6.4: A client SHOULD detect and intervene
   // in cyclical redirections (i.e., "infinite" redirection loops).
   if (++this._redirectCount > this._options.maxRedirects) {
-    this.emit("error", new TooManyRedirectsError());
-    return;
+    throw new TooManyRedirectsError();
   }
 
   // Store the request headers if applicable
@@ -421,14 +426,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
   // Determine the URL of the redirection
-  var redirectUrl;
-  try {
-    redirectUrl = url.resolve(currentUrl, location);
-  }
-  catch (cause) {
-    this.emit("error", new RedirectionError({ cause: cause }));
-    return;
-  }
+  var redirectUrl = url.resolve(currentUrl, location);
 
   // Create the redirected request
   debug("redirecting to", redirectUrl);
@@ -456,23 +454,12 @@ RedirectableRequest.prototype._processResponse = function (response) {
       method: method,
       headers: requestHeaders,
     };
-    try {
-      beforeRedirect(this._options, responseDetails, requestDetails);
-    }
-    catch (err) {
-      this.emit("error", err);
-      return;
-    }
+    beforeRedirect(this._options, responseDetails, requestDetails);
     this._sanitizeOptions(this._options);
   }
 
   // Perform the redirected request
-  try {
-    this._performRequest();
-  }
-  catch (cause) {
-    this.emit("error", new RedirectionError({ cause: cause }));
-  }
+  this._performRequest();
 };
 
 // Wraps the key/value object of protocols with redirect functionality
