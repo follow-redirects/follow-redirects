@@ -364,7 +364,7 @@ describe("follow-redirects", function () {
         switch (error.cause.code) {
         // Node 17+
         case "ERR_INVALID_URL":
-          assert.equal(error.message, "Redirected request failed: Invalid URL");
+          assert.match(error.message, /^Redirected request failed: Invalid URL/);
           break;
         // Older Node versions
         case "ERR_UNESCAPED_CHARACTERS":
@@ -373,23 +373,6 @@ describe("follow-redirects", function () {
         default:
           throw new Error("Unexpected error code " + error.code);
         }
-      });
-  });
-
-  it("emits an error when url.resolve fails", function () {
-    app.get("/a", redirectsTo("/b"));
-    var urlResolve = url.resolve;
-    url.resolve = function () {
-      throw new Error();
-    };
-
-    return server.start(app)
-      .then(asPromise(function (resolve) {
-        http.get("http://localhost:3600/a").on("error", resolve);
-      }))
-      .then(function (error) {
-        url.resolve = urlResolve;
-        assert.equal(error.code, "ERR_FR_REDIRECTION_FAILURE");
       });
   });
 

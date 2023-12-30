@@ -6,6 +6,9 @@ var Writable = require("stream").Writable;
 var assert = require("assert");
 var debug = require("./debug");
 
+// Whether to use the native URL object or the legacy url module
+var hasNativeURL = typeof URL !== "undefined";
+
 // Create handlers that pass events from native requests
 var events = ["abort", "aborted", "connect", "error", "socket", "timeout"];
 var eventHandlers = Object.create(null);
@@ -15,12 +18,12 @@ events.forEach(function (event) {
   };
 });
 
+// Error types with codes
 var InvalidUrlError = createErrorType(
   "ERR_INVALID_URL",
   "Invalid URL",
   TypeError
 );
-// Error types with codes
 var RedirectionError = createErrorType(
   "ERR_FR_REDIRECTION_FAILURE",
   "Redirected request failed"
@@ -426,7 +429,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
     url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
   // Determine the URL of the redirection
-  var redirectUrl = url.resolve(currentUrl, location);
+  var redirectUrl = resolveUrl(location, currentUrl);
 
   // Create the redirected request
   debug("redirecting to", redirectUrl);
@@ -494,7 +497,7 @@ function wrap(protocols) {
         }
         input = parsed;
       }
-      else if (URL && (input instanceof URL)) {
+      else if (hasNativeURL && (input instanceof URL)) {
         input = urlToOptions(input);
       }
       else {
@@ -538,8 +541,14 @@ function wrap(protocols) {
   return exports;
 }
 
-/* istanbul ignore next */
 function noop() { /* empty */ }
+
+function resolveUrl(relative, base) {
+  return !hasNativeURL ?
+    /* istanbul ignore next */
+    url.resolve(base, relative) :
+    (new URL(relative, base)).href;
+}
 
 // from https://github.com/nodejs/node/blob/master/lib/internal/url.js
 function urlToOptions(urlObject) {
