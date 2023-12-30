@@ -7,7 +7,13 @@ var assert = require("assert");
 var debug = require("./debug");
 
 // Whether to use the native URL object or the legacy url module
-var hasNativeURL = typeof URL !== "undefined";
+var useNativeURL = false;
+try {
+  assert(new URL());
+}
+catch (error) {
+  useNativeURL = error.code === "ERR_INVALID_URL";
+}
 
 // URL fields to preserve in copy operations
 var preservedUrlFields = [
@@ -493,27 +499,16 @@ function wrap(protocols) {
 
     // Executes a request, following redirects
     function request(input, options, callback) {
-      // Parse parameters
-      if (isString(input)) {
-        var parsed;
-        try {
-          parsed = spreadUrlObject(new URL(input));
-        }
-        catch (err) {
-          /* istanbul ignore next */
-          parsed = url.parse(input);
-        }
-        if (!isString(parsed.protocol)) {
-          throw new InvalidUrlError({ input });
-        }
-        input = parsed;
-      }
-      else if (hasNativeURL && (input instanceof URL)) {
+      // Parse parameters, ensuring that input is an object
+      if (isURL(input)) {
         input = spreadUrlObject(input);
+      }
+      else if (isString(input)) {
+        input = spreadUrlObject(parseUrl(input));
       }
       else {
         callback = options;
-        options = input;
+        options = validateUrl(input);
         input = { protocol: protocol };
       }
       if (isFunction(options)) {
@@ -554,14 +549,35 @@ function wrap(protocols) {
 
 function noop() { /* empty */ }
 
-function parseUrl(string) {
-  /* istanbul ignore next */
-  return hasNativeURL ? new URL(string) : url.parse(string);
+function parseUrl(input) {
+  var parsed;
+  /* istanbul ignore else */
+  if (useNativeURL) {
+    parsed = new URL(input);
+  }
+  else {
+    // Ensure the URL is valid and absolute
+    parsed = validateUrl(url.parse(input));
+    if (!isString(parsed.protocol)) {
+      throw new InvalidUrlError({ input });
+    }
+  }
+  return parsed;
 }
 
 function resolveUrl(relative, base) {
   /* istanbul ignore next */
-  return hasNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+  return useNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+}
+
+function validateUrl(input) {
+  if (/^\[/.test(input.hostname) && !/^\[[:0-9a-f]+\]$/i.test(input.hostname)) {
+    throw new InvalidUrlError({ input: input.href || input });
+  }
+  if (/^\[/.test(input.host) && !/^\[[:0-9a-f]+\](:\d+)?$/i.test(input.host)) {
+    throw new InvalidUrlError({ input: input.href || input });
+  }
+  return input;
 }
 
 function spreadUrlObject(urlObject, target) {
@@ -644,6 +660,10 @@ function isFunction(value) {
 
 function isBuffer(value) {
   return typeof value === "object" && ("length" in value);
+}
+
+function isURL(value) {
+  return URL && value instanceof URL;
 }
 
 // Exports
