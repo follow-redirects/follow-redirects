@@ -615,7 +615,9 @@ function removeMatchingHeaders(regex, headers) {
 function createErrorType(code, message, baseClass) {
   // Create constructor
   function CustomError(properties) {
-    Error.captureStackTrace(this, this.constructor);
+    if(Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
     Object.assign(this, properties || {});
     this.code = code;
     this.message = this.cause ? message + ": " + this.cause.message : message;
