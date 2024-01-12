@@ -376,6 +376,24 @@ describe("follow-redirects", function () {
     assert.equal(error.input, "/relative");
   });
 
+  it("redirect to URL with fragment", function () {
+    app.get("/a", redirectsTo("/b#abc"));
+    app.get("/b", redirectsTo("/c#def"));
+    app.get("/c", redirectsTo("/d#ghi"));
+    app.get("/d", redirectsTo("/e#jkl"));
+    app.get("/e", redirectsTo("/f#mno"));
+    app.get("/f", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/f#mno");
+      });
+  });
+
   it("should return with the original status code if the response does not contain a location header", function () {
     app.get("/a", function (req, res) {
       res.status(307).end();
