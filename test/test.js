@@ -394,6 +394,26 @@ describe("follow-redirects", function () {
       });
   });
 
+  it("should escape utf-8 characters in the url correctly", function () {
+    app.get("/a", redirectsTo("/b"));
+    app.get("/b", (_, res) => {
+      res.statusCode = 302;
+      res.set('Location', "http://localhost:3600/Â¢");
+      res.end();
+    });
+    app.get("/%C2%A2", redirectsTo("/d"));
+    app.get("/d", sendsJson({ a: "b" }));
+
+    return server.start(app)
+      .then(asPromise(function (resolve, reject) {
+        http.get("http://localhost:3600/a", concatJson(resolve, reject)).on("error", reject);
+      }))
+      .then(function (res) {
+        assert.deepEqual(res.parsedJson, { a: "b" });
+        assert.deepEqual(res.responseUrl, "http://localhost:3600/d");
+      });
+  });
+
   it("should return with the original status code if the response does not contain a location header", function () {
     app.get("/a", function (req, res) {
       res.status(307).end();

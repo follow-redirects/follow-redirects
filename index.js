@@ -567,6 +567,8 @@ function parseUrl(input) {
 }
 
 function resolveUrl(relative, base) {
+  // Ensure that any non-ascii characters are escaped correctly as a valid URI
+  relative = encodeURI(Buffer.from(relative, 'binary').toString('utf8'))
   /* istanbul ignore next */
   return useNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
 }
