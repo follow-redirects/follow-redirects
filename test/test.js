@@ -398,7 +398,7 @@ describe("follow-redirects", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", (_, res) => {
       res.statusCode = 302;
-      res.set('Location', "http://localhost:3600/Â¢");
+      res.set("Location", "http://localhost:3600/Â¢");
       res.end();
     });
     app.get("/%C2%A2", redirectsTo("/d"));

@@ -550,13 +550,16 @@ function wrap(protocols) {
 
 function noop() { /* empty */ }
 
-function parseUrl(input) {
+function parseUrl(input, base) {
   var parsed;
   /* istanbul ignore else */
   if (useNativeURL) {
-    parsed = new URL(input);
+    parsed = new URL(input, base);
   }
   else {
+    if (base) {
+      input = url.resolve(base, input);
+    }
     // Ensure the URL is valid and absolute
     parsed = validateUrl(url.parse(input));
     if (!isString(parsed.protocol)) {
@@ -567,10 +570,10 @@ function parseUrl(input) {
 }
 
 function resolveUrl(relative, base) {
-  // Ensure that any non-ascii characters are escaped correctly as a valid URI
-  relative = encodeURI(Buffer.from(relative, 'binary').toString('utf8'))
-  /* istanbul ignore next */
-  return useNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+  const parsed = parseUrl(relative, base);
+  // Ensure that any non-ascii characters in path are escaped correctly as a valid URI
+  parsed.pathname = parseUrl(encodeURI(Buffer.from(relative, "binary").toString("utf8")), base).pathname;
+  return parsed;
 }
 
 function validateUrl(input) {
