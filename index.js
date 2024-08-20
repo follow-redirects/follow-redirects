@@ -587,6 +587,12 @@ function spreadUrlObject(urlObject, target) {
     spread[key] = urlObject[key];
   }
 
+  // Native URL objects don't include an `auth` field, but the http and https
+  // protocols rely on that to create the Authorization header
+  if (useNativeURL && urlObject.username && urlObject.password && !urlObject.auth) {
+    spread.auth = `${decodeURIComponent(urlObject.username)}:${decodeURIComponent(urlObject.password)}`;
+  }
+
   // Fix IPv6 hostname
   if (spread.hostname.startsWith("[")) {
     spread.hostname = spread.hostname.slice(1, -1);
