@@ -621,7 +621,9 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var req = http.get("http://localhost:3600/data", concatJson(reject, reject));
+          var opts = url.parse("http://localhost:3600/data");
+          opts.agent = new http.Agent({ keepAlive: false });
+          var req = http.get(opts, concatJson(reject, reject));
           req.on("error", reject);
           req.setTimeout(100, function () {
             throw new Error("should not have timed out");

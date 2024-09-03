@@ -60,6 +60,10 @@ module.exports = function (defaultPorts) {
 
   function stopServer(server) {
     return new Promise(function (resolve, reject) {
+      // Node 19 uses KeepAlive by default
+      if (server.closeIdleConnections) {
+        server.closeIdleConnections();
+      }
       server.close(function (error) {
         return error ? reject(error) : resolve();
       });
