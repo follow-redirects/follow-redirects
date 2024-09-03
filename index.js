@@ -7,13 +7,6 @@ var assert = require("assert");
 var debug = require("./debug");
 var nope = require("./nope");
 
-// Disaster prevention
-/* istanbul ignore next */
-if (nope.isBrowser()) {
-  module.exports = nope;
-  return;
-}
-
 // Whether to use the native URL object or the legacy url module
 var useNativeURL = false;
 try {
@@ -492,7 +485,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
 };
 
 // Wraps the key/value object of protocols with redirect functionality
-function wrap(protocols) {
+var wrap = nope.wrap || function wrap(protocols) {
   // Default settings
   var exports = {
     maxRedirects: 21,
@@ -554,7 +547,7 @@ function wrap(protocols) {
     });
   });
   return exports;
-}
+};
 
 function noop() { /* empty */ }
 
