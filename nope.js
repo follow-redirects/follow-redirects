@@ -1,5 +1,5 @@
 // follow-redirects absolutely must not be used in the browser.
-// Neither should the `http` and `http` modules it replaces, yet here we are.
+// Neither should the `http` and `https` modules it replaces, yet here we are.
 var http = require("http");
 var https = require("https");
 
