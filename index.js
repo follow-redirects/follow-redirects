@@ -5,6 +5,14 @@ var https = require("https");
 var Writable = require("stream").Writable;
 var assert = require("assert");
 var debug = require("./debug");
+var nope = require("./nope");
+
+// Disaster prevention
+/* istanbul ignore next */
+if (nope.isBrowser()) {
+  module.exports = nope;
+  return;
+}
 
 // Whether to use the native URL object or the legacy url module
 var useNativeURL = false;

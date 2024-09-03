@@ -6,6 +6,7 @@ var url = require("url");
 var followRedirects = require("..");
 var http = followRedirects.http;
 var https = followRedirects.https;
+var nope = require("../nope");
 var fs = require("fs");
 var path = require("path");
 var lolex = require("lolex");
@@ -52,6 +53,19 @@ describe("follow-redirects", function () {
     followRedirects.maxRedirects = originalMaxRedirects;
     followRedirects.maxBodyLength = originalMaxBodyLength;
     return server.stop();
+  });
+
+  it("doesn't run in the browser", function () {
+    var isBrowser = nope.isBrowser();
+    var error;
+    try {
+      isBrowser = nope.wrap();
+    }
+    catch (err) {
+      error = err;
+    }
+    assert.equal(isBrowser, false);
+    assert(error instanceof Error);
   });
 
   it("http.get with string and callback - redirect", function () {
