@@ -6,6 +6,10 @@ var Writable = require("stream").Writable;
 var assert = require("assert");
 var debug = require("./debug");
 
+// follow-redirects must not be used in browsers because the browser
+// equivalents perform redirects by default
+assert(typeof window === "undefined")
+
 // Whether to use the native URL object or the legacy url module
 var useNativeURL = false;
 try {
