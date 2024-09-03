@@ -17,7 +17,7 @@ if (nope.isBrowser()) {
 // Whether to use the native URL object or the legacy url module
 var useNativeURL = false;
 try {
-  assert(new URL());
+  assert(new URL(""));
 }
 catch (error) {
   useNativeURL = error.code === "ERR_INVALID_URL";
