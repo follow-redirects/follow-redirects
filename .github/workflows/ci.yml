@@ -51,6 +51,10 @@ jobs:
           - '17.x'
           - '18.0'
           - '18.x'
+          - '20.0'
+          - '20.x'
+          - '22.0'
+          - '22.x'
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
