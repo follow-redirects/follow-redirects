@@ -23,6 +23,7 @@
     no-alert: "error",
     no-caller: "error",
     no-case-declarations: "error",
+    no-console: ["error", { allow: ["warn"] }],
     no-div-regex: "error",
     no-else-return: "error",
     no-empty-function: "error",

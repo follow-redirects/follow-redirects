@@ -4,7 +4,6 @@
   "description": "HTTP and HTTPS modules that follow redirects.",
   "license": "MIT",
   "main": "index.js",
-  "browser": "nope.js",
   "files": [
     "*.js"
   ],
