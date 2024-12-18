@@ -629,7 +629,7 @@ function createErrorType(code, message, baseClass) {
   function CustomError(properties) {
     // istanbul ignore else
     if (isFunction(Error.captureStackTrace)) {
-      Error.captureStackTrace(this, this.constructor);
+      Error.captureStackTrace(Error(this), this.constructor);
     }
     Object.assign(this, properties || {});
     this.code = code;
