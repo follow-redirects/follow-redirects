@@ -315,6 +315,15 @@ RedirectableRequest.prototype._sanitizeOptions = function (options) {
   }
 };
 
+RedirectableRequest.prototype._emitResponse = function (response) {
+  response.responseUrl = this._currentUrl;
+  response.redirects = this._redirects;
+  this.emit("response", response);
+
+  // Clean up
+  this._requestBodyBuffers = [];
+}
+
 
 // Executes the next native request (initial or redirect)
 RedirectableRequest.prototype._performRequest = function () {
@@ -404,14 +413,30 @@ RedirectableRequest.prototype._processResponse = function (response) {
   var location = response.headers.location;
   if (!location || this._options.followRedirects === false ||
       statusCode < 300 || statusCode >= 400) {
-    response.responseUrl = this._currentUrl;
-    response.redirects = this._redirects;
-    this.emit("response", response);
-
-    // Clean up
-    this._requestBodyBuffers = [];
+    this._emitResponse(response);
     return;
   }
+
+  var conditionallyRedirect = this._options.conditionallyRedirect;
+
+  // Evaluate the conditionallyRedirect callback
+  if (isFunction(conditionallyRedirect)) {
+    var responseDetails = {
+      headers: response.headers,
+      statusCode: statusCode,
+    };
+    var requestDetails = {
+      url: this._currentUrl,
+      method: this._options.method,
+      headers: Object.assign({
+        Host: response.req.getHeader("host"),
+      }, this._options.headers),
+    };
+    if (!conditionallyRedirect(responseDetails, requestDetails)) {
+      this._emitResponse(response);
+      return;
+    }
+  }  
 
   // The response is a redirect, so abort the current request
   destroyRequest(this._currentRequest);

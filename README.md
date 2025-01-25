@@ -78,6 +78,17 @@ options.beforeRedirect = (options, response, request) => {
     options.auth = "user:password";
   }
 };
+options.conditionallyRedirect = (response, request) => {
+  // follow redirect if function returns true
+
+  // response.headers = the redirect response headers
+  // response.statusCode = the redirect response code (eg. 301, 307, etc.)
+
+  // request.url = the requested URL that resulted in a redirect
+  // request.headers = the headers in the request that resulted in a redirect
+  // request.method = the method of the request that resulted in a redirect
+  return response.headers.location === "https://example.com";
+}
 http.request(options);
 ```
 
@@ -90,6 +101,8 @@ the following per-request options are supported:
 - `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
 
 - `beforeRedirect` (default: `undefined`) – optionally change the request `options` on redirects, or abort the request by throwing an error.
+
+- `conditionallyRedirect` (default: `undefined`) - conditionally follow redirect based on request or response details.
 
 - `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
 

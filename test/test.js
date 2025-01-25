@@ -13,6 +13,7 @@ var lolex = require("lolex");
 var util = require("./util");
 var concat = require("concat-stream");
 var concatJson = util.concatJson;
+var concatString = util.concatString;
 var delay = util.delay;
 var redirectsTo = util.redirectsTo;
 var sendsJson = util.sendsJson;
@@ -2153,6 +2154,66 @@ describe("follow-redirects", function () {
           assert.equal(called, true);
         });
     });
+  });
+
+  describe('conditionally redirect', function () {
+    it("does not follow redirects", function () {
+      app.get("/a", redirectsTo("/b"));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "GET",
+            conditionallyRedirect: function (response, request) {
+              assert.equal(response.statusCode, 302);
+              assert.equal(response.headers.location, "/b");
+              assert.deepEqual(request, {
+                url: "http://localhost:3600/a",
+                method: "GET",
+                headers: {
+                  Host: 'localhost:3600'
+                }
+              })
+              return false;
+            }
+          }
+          http.get(options, concatString(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.equal(res.body, "Found. Redirecting to /b");
+          assert.equal(res.statusCode, 302);
+          assert.equal(res.headers.location, "/b");
+          assert.equal(res.responseUrl, "http://localhost:3600/a");
+        });
+    })
+
+    it("follows redirects to an allowed location", function () {
+      app.post("/a", redirectsTo(308, "http://localhost:3600/b"));
+      app.post("/b", redirectsTo(307, "http://example.com/c"));
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var options = {
+            host: "localhost",
+            port: 3600,
+            path: "/a",
+            method: "POST",
+            conditionallyRedirect: function (response, _request) {
+              return response.headers.location.startsWith("http://localhost:3600/");
+            }
+          }
+          http.get(options, concatString(resolve, reject)).on("error", reject);
+        }))
+        .then(function (res) {
+          assert.equal(res.body, "Temporary Redirect. Redirecting to http://example.com/c");
+          assert.equal(res.statusCode, 307);
+          assert.equal(res.headers.location, "http://example.com/c");
+          assert.equal(res.responseUrl, "http://localhost:3600/b");
+        });
+    })
   });
 
   describe("change request options before redirects", function () {

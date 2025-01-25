@@ -30,6 +30,15 @@ function concatJson(resolve, reject) {
   };
 }
 
+function concatString(resolve, reject) {
+  return function (res) {
+    res.pipe(concat({ encoding: "string" }, function (string) {
+        res.body = string;
+        resolve(res);
+    })).on("error", reject);
+  };
+}
+
 function delay(clock, msecs, handler) {
   return function (req, res) {
     clock.tick(msecs);
@@ -68,6 +77,7 @@ function proxy(proxyHost) {
 module.exports = {
   asPromise: asPromise,
   concatJson: concatJson,
+  concatString: concatString,
   delay: delay,
   proxy: proxy,
   redirectsTo: redirectsTo,
