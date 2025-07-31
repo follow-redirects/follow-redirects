@@ -3,6 +3,7 @@
   "version": "1.15.9",
   "description": "HTTP and HTTPS modules that follow redirects.",
   "license": "MIT",
+  "sideEffects": false,
   "main": "index.js",
   "files": [
     "*.js"
