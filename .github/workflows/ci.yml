@@ -55,6 +55,8 @@ jobs:
           - '20.x'
           - '22.0'
           - '22.x'
+          - '24.0'
+          - '24.x'
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
