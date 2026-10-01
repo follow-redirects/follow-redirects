@@ -1542,6 +1542,7 @@ describe("follow-redirects", function () {
     var sensitiveHeaders = [
       "Sensitive-A",
       "x-sensitive-b",
+      "^$.*+?()[]{}|/", // test RegExp escapes
     ];
 
     describe("when the client passes an header named " + header, function () {
