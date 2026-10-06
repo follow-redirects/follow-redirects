@@ -61,6 +61,7 @@ Per-request options are set by passing an `options` object:
 const url = require('url');
 const { http, https } = require('follow-redirects');
 
+// TODO: what to recommend instead of url.parse? Internally we use spreadUrlObject
 const options = url.parse('http://en.wikipedia.org/');
 options.maxRedirects = 10;
 options.beforeRedirect = (options, response, request) => {
