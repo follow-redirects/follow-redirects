@@ -599,7 +599,14 @@ function validateUrl(input) {
 
 function spreadUrlObject(urlObject, target) {
   var spread = target || {};
+
+  // Follow pre-determined list to extract fields from native URL object
   for (var key of preservedUrlFields) {
+    spread[key] = urlObject[key];
+  }
+
+  // Use normal object enumeration to respect later-attached keys
+  for (var key of Object.keys(urlObject)) {
     spread[key] = urlObject[key];
   }
 
