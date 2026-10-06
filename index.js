@@ -17,15 +17,6 @@ var debug = require("./debug");
   }
 }());
 
-// Whether to use the native URL object or the legacy url module
-var useNativeURL = false;
-try {
-  assert(new URL(""));
-}
-catch (error) {
-  useNativeURL = error.code === "ERR_INVALID_URL";
-}
-
 // HTTP headers to drop across HTTP/HTTPS and domain boundaries
 var sensitiveHeaders = [
   "Authorization",
@@ -586,24 +577,12 @@ function wrap(protocols) {
 function noop() { /* empty */ }
 
 function parseUrl(input) {
-  var parsed;
-  // istanbul ignore else
-  if (useNativeURL) {
-    parsed = new URL(input);
-  }
-  else {
-    // Ensure the URL is valid and absolute
-    parsed = validateUrl(url.parse(input));
-    if (!isString(parsed.protocol)) {
-      throw new InvalidUrlError({ input });
-    }
-  }
-  return parsed;
+  return new URL(input);
 }
 
 function resolveUrl(relative, base) {
   // istanbul ignore next
-  return useNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+  return new URL(relative, base);
 }
 
 function validateUrl(input) {
@@ -706,7 +685,7 @@ function isBuffer(value) {
 }
 
 function isURL(value) {
-  return URL && value instanceof URL;
+  return value instanceof URL;
 }
 
 function escapeRegex(regex) {
