@@ -358,6 +358,7 @@ RedirectableRequest.prototype._performRequest = function () {
   // RFC7230§5.3.1: When making a request directly to an origin server, […]
   // a client MUST send only the absolute path […] as the request-target.
   this._currentUrl = /^\//.test(this._options.path) ?
+    // Note: this use of `url.format` is *not* deprecated, c.f. https://nodejs.org/api/url.html#urlformaturlobject
     url.format(this._options) :
     // When making a request to a proxy, […]
     // a client MUST send the target URI in absolute-form […].
@@ -472,6 +473,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // If the redirect is relative, carry over the host of the last request
   var currentUrlParts = parseUrl(this._currentUrl);
   var currentHost = currentHostHeader || currentUrlParts.host;
+  // Note: this use of url.format is *not* deprecated, c.f. https://nodejs.org/api/url.html#urlformaturlobject
   var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
     url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
