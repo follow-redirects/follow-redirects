@@ -47,7 +47,7 @@ function asPromise(cb) {
 
 function proxy(proxyHost) {
   return function (req, res) {
-    var upstreamUrl = url.parse(req.originalUrl);
+    var upstreamUrl = new url.URL(req.originalUrl);
     if (upstreamUrl.host === proxyHost) {
       res.writeHead(400, "Bad request");
       res.write(JSON.stringify({ bad: "detected proxy recursion" }));
@@ -65,6 +65,42 @@ function proxy(proxyHost) {
   };
 }
 
+// TODO: copied from index.js - how dedupe?
+// URL fields to preserve in copy operations
+var preservedUrlFields = [
+  "auth",
+  "host",
+  "hostname",
+  "href",
+  "path",
+  "pathname",
+  "port",
+  "protocol",
+  "query",
+  "search",
+  "hash",
+];
+
+function spreadUrlObject(urlObject, target) {
+  var spread = target || {};
+  for (var key of preservedUrlFields) {
+    spread[key] = urlObject[key];
+  }
+
+  // Fix IPv6 hostname
+  if (spread.hostname.startsWith("[")) {
+    spread.hostname = spread.hostname.slice(1, -1);
+  }
+  // Ensure port is a number
+  if (spread.port !== "") {
+    spread.port = Number(spread.port);
+  }
+  // Concatenate path
+  spread.path = spread.search ? spread.pathname + spread.search : spread.pathname;
+
+  return spread;
+}
+
 module.exports = {
   asPromise: asPromise,
   concatJson: concatJson,
@@ -72,4 +108,5 @@ module.exports = {
   proxy: proxy,
   redirectsTo: redirectsTo,
   sendsJson: sendsJson,
+  spreadUrlObject: spreadUrlObject,
 };
