@@ -606,8 +606,8 @@ function spreadUrlObject(urlObject, target) {
   }
 
   // Use normal object enumeration to respect later-attached keys
-  for (var key of Object.keys(urlObject)) {
-    spread[key] = urlObject[key];
+  for (var propKey of Object.keys(urlObject)) {
+    spread[propKey] = urlObject[propKey];
   }
 
   // Fix IPv6 hostname
