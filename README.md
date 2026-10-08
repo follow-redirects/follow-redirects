@@ -1,4 +1,30 @@
-## Follow Redirects
+## _Follow Redirects_ is in need of funding
+
+> [!IMPORTANT]
+> **Maintenance paused until funding found.**
+>
+> follow-redirects is downloaded over 400 million times per month,
+> It has been maintained for over ten years by one volunteer,
+> who has no funds to provide update and security guarantees.
+>
+> **What this means for you:**
+> the package stays published and keeps working as it does today,
+> but there are no guarantees of bug fixes, security fixes,
+> or replies to issues and pull requests.
+> Security reports are handled best-effort only; see [SECURITY.md](SECURITY.md).
+>
+> **What can restart maintenance:**
+> Even if only 0.1% of downloads paid $0.01, we'd be fully funded
+> with $4000 per month.
+> That's not the case, and that's okay,
+> but unfortunately also insufficient to continue.
+> We need to cover security triage, CVE handling, fixes, and releases.
+> Progress toward that goal will be posted here.
+>
+> **If your company depends on follow-redirects,**
+> directly or another library,
+> please [sponsor on GitHub](https://github.com/sponsors/RubenVerborgh)
+> or email us for invoice-based funding or a security support agreement.
 
 Drop-in replacement for Node's `http` and `https` modules that automatically follows redirects.
 
