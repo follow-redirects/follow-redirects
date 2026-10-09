@@ -84,10 +84,9 @@ The following global options are supported:
 Per-request options are set by passing an `options` object:
 
 ```javascript
-const url = require('url');
 const { http, https } = require('follow-redirects');
 
-const options = url.parse('http://en.wikipedia.org/');
+const options = new URL('http://en.wikipedia.org/');
 options.maxRedirects = 10;
 options.beforeRedirect = (options, response, request) => {
   // Use this to adjust the request options upon redirecting,

@@ -3,6 +3,7 @@ var assert = require("assert");
 var net = require("net");
 var server = require("./server")({ https: 3601, http: 3600 });
 var url = require("url");
+var URL = url.URL;
 var followRedirects = require("..");
 var http = followRedirects.http;
 var https = followRedirects.https;
@@ -607,7 +608,7 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://localhost:3600/data");
+          var opts = new URL("http://localhost:3600/data");
           opts.agent = new http.Agent({ keepAlive: false });
           var req = http.get(opts, concatJson(reject, reject));
           req.on("error", reject);
@@ -691,7 +692,7 @@ describe("follow-redirects", function () {
 
     return server.start(httpsOptions(app))
       .then(asPromise(function (resolve, reject) {
-        var opts = url.parse("https://localhost:3601/a");
+        var opts = new URL("https://localhost:3601/a");
         opts.ca = ca;
         https.get(opts, concatJson(resolve, reject)).on("error", reject);
       }))
@@ -935,7 +936,7 @@ describe("follow-redirects", function () {
     });
 
     it("set as an option on an individual request", function () {
-      var u = url.parse("http://localhost:3600/r2");
+      var u = new URL("http://localhost:3600/r2");
       u.maxRedirects = 1;
 
       return server.start(app)
@@ -961,7 +962,7 @@ describe("follow-redirects", function () {
       it("should not track redirects", function () {
         return server.start(app)
           .then(asPromise(function (resolve, reject) {
-            var opts = url.parse("http://localhost:3600/a");
+            var opts = new URL("http://localhost:3600/a");
             http.get(opts, concatJson(resolve, reject)).on("error", reject);
           }))
           .then(function (res) {
@@ -975,7 +976,7 @@ describe("follow-redirects", function () {
       it("should track redirects", function () {
         return server.start(app)
           .then(asPromise(function (resolve, reject) {
-            var opts = url.parse("http://localhost:3600/a");
+            var opts = new URL("http://localhost:3600/a");
             opts.trackRedirects = true;
             http.get(opts, concatJson(resolve, reject)).on("error", reject);
           }))
@@ -1020,7 +1021,7 @@ describe("follow-redirects", function () {
 
         return server.start(app)
           .then(asPromise(function (resolve, reject) {
-            var opts = url.parse("http://localhost:3600/a");
+            var opts = new URL("http://localhost:3600/a");
             opts.method = originalMethod;
             http.request(opts, resolve).on("error", reject).end();
           }))
@@ -1048,7 +1049,7 @@ describe("follow-redirects", function () {
 
       return Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("https://localhost:3601/a");
+          var opts = new URL("https://localhost:3601/a");
           opts.ca = ca;
           https.get(opts, concatJson(resolve, reject)).on("error", reject);
         }))
@@ -1065,7 +1066,7 @@ describe("follow-redirects", function () {
 
       return Promise.all([server.start(app), server.start(httpsOptions(app2))])
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://localhost:3600/a");
+          var opts = new URL("http://localhost:3600/a");
           opts.ca = ca;
           http.get(opts, concatJson(resolve, reject)).on("error", reject);
         }))
@@ -1243,7 +1244,7 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
+    var opts = new URL("http://localhost:3600/a");
     opts.method = "POST";
     opts.headers = {
       "Content-Length": testFileBuffer.byteLength,
@@ -1272,7 +1273,7 @@ describe("follow-redirects", function () {
       req.pipe(res);
     });
 
-    var opts = url.parse("http://localhost:3600/a");
+    var opts = new URL("http://localhost:3600/a");
     opts.method = "POST";
     opts.headers = {
       "Content-Length": testFileBuffer.byteLength,
@@ -1319,7 +1320,7 @@ describe("follow-redirects", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
-      var opts = url.parse("http://localhost:3600/a");
+      var opts = new URL("http://localhost:3600/a");
       opts.method = "POST";
       opts.maxBodyLength = 8;
 
@@ -1361,7 +1362,7 @@ describe("follow-redirects", function () {
       app.post("/a", function (req, res) {
         req.pipe(res);
       });
-      var opts = url.parse("http://localhost:3600/a");
+      var opts = new URL("http://localhost:3600/a");
       opts.method = "POST";
       opts.maxBodyLength = 8;
 
@@ -1405,7 +1406,7 @@ describe("follow-redirects", function () {
         req.pipe(res); // will invalidate JSON if non-empty
       });
 
-      var opts = url.parse("http://localhost:3600/a");
+      var opts = new URL("http://localhost:3600/a");
       opts.method = "POST";
       opts.headers = {
         "other": "value",
@@ -1442,7 +1443,7 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://localhost:3600/a");
+          var opts = new URL("http://localhost:3600/a");
           opts.headers = { hOsT: "otherhost.com" };
           http.get(opts, resolve).on("error", reject);
         }))
@@ -1466,7 +1467,7 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://127.0.0.1:3600/a");
+          var opts = new URL("http://127.0.0.1:3600/a");
           opts.headers = { hOsT: "localhost:3600" };
           http.get(opts, resolve).on("error", reject);
         }))
@@ -1490,7 +1491,7 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://127.0.0.1:3600/a");
+          var opts = new URL("http://127.0.0.1:3600/a");
           opts.headers = { hOsT: "localhost:3600" };
           http.get(opts, resolve).on("error", reject);
         }))
@@ -1552,7 +1553,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = { host: "localhost" };
         opts.headers[header] = null;
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1577,7 +1578,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = {};
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1602,7 +1603,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = {};
         opts.headers = [header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1627,7 +1628,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = { host: "localhost:3600" };
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1652,7 +1653,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = ["host", "localhost:3600", header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
 
@@ -1676,7 +1677,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = {};
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1707,7 +1708,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = [header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
 
@@ -1737,7 +1738,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = { host: "localhost" };
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1762,7 +1763,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = ["host", "localhost", header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
 
@@ -1786,7 +1787,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = {};
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1811,7 +1812,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://localhost:3600/a");
+        var opts = new URL("http://localhost:3600/a");
         opts.headers = [header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
 
@@ -1835,7 +1836,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = { host: "localhost" };
         opts.headers[header] = "the header value";
         opts.sensitiveHeaders = sensitiveHeaders;
@@ -1860,7 +1861,7 @@ describe("follow-redirects", function () {
           res.end(JSON.stringify(req.headers));
         });
 
-        var opts = url.parse("http://127.0.0.1:3600/a");
+        var opts = new URL("http://127.0.0.1:3600/a");
         opts.headers = ["host", "localhost", header, "the header value"];
         opts.sensitiveHeaders = sensitiveHeaders;
 
@@ -1885,7 +1886,7 @@ describe("follow-redirects", function () {
         res.end(JSON.stringify(req.headers));
       });
 
-      var opts = url.parse("http://localhost:3600/a");
+      var opts = new URL("http://localhost:3600/a");
       opts.headers = {};
       opts.headers[header] = "the header value";
 
@@ -1914,7 +1915,7 @@ describe("follow-redirects", function () {
         res.end(JSON.stringify(req.headers));
       });
 
-      var opts = url.parse("http://localhost:3600/a");
+      var opts = new URL("http://localhost:3600/a");
       opts.headers = [header, "the header value"];
 
       // Intercept the scheme
@@ -1942,7 +1943,7 @@ describe("follow-redirects", function () {
         res.end(JSON.stringify(req.headers));
       });
 
-      var opts = url.parse("https://localhost:3601/a");
+      var opts = new URL("https://localhost:3601/a");
       opts.ca = ca;
       opts.headers = {};
       opts.headers[header] = "the header value";
@@ -1973,7 +1974,7 @@ describe("follow-redirects", function () {
         res.end(JSON.stringify(req.headers));
       });
 
-      var opts = url.parse("https://localhost:3601/a");
+      var opts = new URL("https://localhost:3601/a");
       opts.ca = ca;
       opts.headers = [header, "the header value"];
       opts.sensitiveHeaders = sensitiveHeaders;
@@ -2144,7 +2145,7 @@ describe("follow-redirects", function () {
 
       return server.start(app)
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("http://localhost:3600/a");
+          var opts = new URL("http://localhost:3600/a");
           opts.followRedirects = false;
           http.get(opts, resolve).on("error", reject);
         }))
@@ -2175,7 +2176,7 @@ describe("follow-redirects", function () {
 
       return Promise.all([server.start(httpsOptions(app)), server.start(app2)])
         .then(asPromise(function (resolve, reject) {
-          var opts = url.parse("https://localhost:3601/a");
+          var opts = new URL("https://localhost:3601/a");
           opts.ca = ca;
           opts.agents = { http: httpAgent, https: httpsAgent };
           https.get(opts, concatJson(resolve, reject)).on("error", reject);
@@ -2509,7 +2510,7 @@ describe("follow-redirects", function () {
         app2.all("*", proxy("localhost:3601"));
 
         function setProxy(opts) {
-          // assuming opts is a url.parse result
+          // assuming opts is a URL or URL-like object
           // Update path and Host header
           opts.path = opts.href;
           opts.pathname = opts.href;
@@ -2523,7 +2524,15 @@ describe("follow-redirects", function () {
         }
         return Promise.all([server.start(app), server.start(app2)])
           .then(asPromise(function (resolve, reject) {
-            var opts = Object.assign({}, url.parse("http://localhost:3600/a"));
+            var url = new URL("http://localhost:3600/a");
+            var opts = {
+              pathname: url.pathname,
+              href: url.href,
+              host: url.host,
+              hostname: url.hostname,
+              port: url.port,
+              protocol: url.protocol,
+            };
             setProxy(opts);
 
             http.get(opts, concatJson(resolve, reject)).on("error", reject);

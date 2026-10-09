@@ -17,15 +17,6 @@ var debug = require("./debug");
   }
 }());
 
-// Whether to use the native URL object or the legacy url module
-var useNativeURL = false;
-try {
-  assert(new URL(""));
-}
-catch (error) {
-  useNativeURL = error.code === "ERR_INVALID_URL";
-}
-
 // HTTP headers to drop across HTTP/HTTPS and domain boundaries
 var sensitiveHeaders = [
   "Authorization",
@@ -367,6 +358,7 @@ RedirectableRequest.prototype._performRequest = function () {
   // RFC7230§5.3.1: When making a request directly to an origin server, […]
   // a client MUST send only the absolute path […] as the request-target.
   this._currentUrl = /^\//.test(this._options.path) ?
+    // Note: this use of `url.format` is *not* deprecated, c.f. https://nodejs.org/api/url.html#urlformaturlobject
     url.format(this._options) :
     // When making a request to a proxy, […]
     // a client MUST send the target URI in absolute-form […].
@@ -481,6 +473,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
   // If the redirect is relative, carry over the host of the last request
   var currentUrlParts = parseUrl(this._currentUrl);
   var currentHost = currentHostHeader || currentUrlParts.host;
+  // Note: this use of url.format is *not* deprecated, c.f. https://nodejs.org/api/url.html#urlformaturlobject
   var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
     url.format(Object.assign(currentUrlParts, { host: currentHost }));
 
@@ -586,24 +579,12 @@ function wrap(protocols) {
 function noop() { /* empty */ }
 
 function parseUrl(input) {
-  var parsed;
-  // istanbul ignore else
-  if (useNativeURL) {
-    parsed = new URL(input);
-  }
-  else {
-    // Ensure the URL is valid and absolute
-    parsed = validateUrl(url.parse(input));
-    if (!isString(parsed.protocol)) {
-      throw new InvalidUrlError({ input });
-    }
-  }
-  return parsed;
+  return new URL(input);
 }
 
 function resolveUrl(relative, base) {
   // istanbul ignore next
-  return useNativeURL ? new URL(relative, base) : parseUrl(url.resolve(base, relative));
+  return new URL(relative, base);
 }
 
 function validateUrl(input) {
@@ -618,8 +599,15 @@ function validateUrl(input) {
 
 function spreadUrlObject(urlObject, target) {
   var spread = target || {};
+
+  // Follow pre-determined list to extract fields from native URL object
   for (var key of preservedUrlFields) {
     spread[key] = urlObject[key];
+  }
+
+  // Use normal object enumeration to respect later-attached keys
+  for (var propKey of Object.keys(urlObject)) {
+    spread[propKey] = urlObject[propKey];
   }
 
   // Fix IPv6 hostname
@@ -706,7 +694,7 @@ function isBuffer(value) {
 }
 
 function isURL(value) {
-  return URL && value instanceof URL;
+  return value instanceof URL;
 }
 
 function escapeRegex(regex) {
