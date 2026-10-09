@@ -2524,8 +2524,15 @@ describe("follow-redirects", function () {
         }
         return Promise.all([server.start(app), server.start(app2)])
           .then(asPromise(function (resolve, reject) {
-            // TODO: why does this test fail when just URL?
-            var opts = util.spreadUrlObject(new URL("http://localhost:3600/a"));
+            var url = new URL("http://localhost:3600/a");
+            var opts = {
+              pathname: url.pathname,
+              href: url.href,
+              host: url.host,
+              hostname: url.hostname,
+              port: url.port,
+              protocol: url.protocol,
+            };
             setProxy(opts);
 
             http.get(opts, concatJson(resolve, reject)).on("error", reject);
