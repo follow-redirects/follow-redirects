@@ -97,6 +97,99 @@ describe("follow-redirects", function () {
       });
   });
 
+  describe("basic auth propagation", function () {
+    it("propagates basic auth from native URL through redirect", function () {
+      if (nodeMajorVersion < 10) {
+        this.skip();
+      }
+
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(new URL("http://user:pass@localhost:3600/a"), resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          var expected = Buffer.from("user:pass").toString("base64");
+          assert.equal(body.authorization, "Basic " + expected);
+        });
+    });
+
+    it("propagates basic auth with encoded special characters from native URL", function () {
+      if (nodeMajorVersion < 10) {
+        this.skip();
+      }
+
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(new URL("http://user%40user.com:bar%3A@localhost:3600/a"), resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          var expected = Buffer.from("user@user.com:bar:").toString("base64");
+          assert.equal(body.authorization, "Basic " + expected);
+        });
+    });
+
+    it("propagates basic auth from url.parse through redirect", function () {
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(url.parse("http://user:pass@localhost:3600/a"), resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          var expected = Buffer.from("user:pass").toString("base64");
+          assert.equal(body.authorization, "Basic " + expected);
+        });
+    });
+
+    it("does not send auth header when native URL has no credentials", function () {
+      if (nodeMajorVersion < 10) {
+        this.skip();
+      }
+
+      app.get("/a", redirectsTo("/b"));
+      app.get("/b", function (req, res) {
+        res.end(JSON.stringify(req.headers));
+      });
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          http.get(new URL("http://localhost:3600/a"), resolve).on("error", reject);
+        }))
+        .then(asPromise(function (resolve, reject, res) {
+          res.pipe(concat({ encoding: "string" }, resolve)).on("error", reject);
+        }))
+        .then(function (str) {
+          var body = JSON.parse(str);
+          assert.equal(body.authorization, undefined);
+        });
+    });
+  });
+
   it("http.get with options object and callback - redirect", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
