@@ -216,12 +216,28 @@ RedirectableRequest.prototype.removeHeader = function (name) {
 // Global timeout for all underlying requests
 RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
   var self = this;
+  var timeoutSocket;
+  var timeoutListener;
+  var responseToClean;
+
+  function clearTimeoutListener() {
+    if (timeoutSocket) {
+      timeoutSocket.removeListener("timeout", timeoutListener);
+      timeoutSocket = timeoutListener = null;
+    }
+  }
 
   // Destroys the socket on timeout
   function destroyOnTimeout(socket) {
     socket.setTimeout(msecs);
-    socket.removeListener("timeout", socket.destroy);
-    socket.addListener("timeout", socket.destroy);
+    if (timeoutSocket !== socket) {
+      clearTimeoutListener();
+      timeoutSocket = socket;
+      timeoutListener = function () {
+        socket.destroy();
+      };
+      socket.addListener("timeout", timeoutListener);
+    }
   }
 
   // Sets up a timer to trigger a timeout event
@@ -244,17 +260,62 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
       self._timeout = null;
     }
 
-    // Clean up all attached listeners
-    self.removeListener("abort", clearTimer);
-    self.removeListener("error", clearTimer);
-    self.removeListener("response", clearTimer);
-    self.removeListener("close", clearTimer);
     if (callback) {
       self.removeListener("timeout", callback);
     }
     if (!self.socket) {
       self._currentRequest.removeListener("socket", startTimer);
     }
+  }
+
+  // Cleans up after the request or response has ended
+  function cleanUp() {
+    clearTimer();
+    self.removeListener("socket", destroyOnTimeout);
+    self.removeListener("abort", cleanUp);
+    self.removeListener("error", cleanUp);
+    self.removeListener("response", onResponse);
+    self.removeListener("close", onClose);
+    clearTimeoutListener();
+    if (responseToClean) {
+      responseToClean.removeListener("end", onResponseComplete);
+      responseToClean.removeListener("close", onResponseComplete);
+      responseToClean.removeListener("error", onResponseComplete);
+      responseToClean.removeListener("aborted", onResponseComplete);
+      responseToClean = null;
+    }
+  }
+
+  // Retain the socket timeout handler until the response body is complete
+  function attachResponseCleanup(responseStream) {
+    self.removeListener("socket", destroyOnTimeout);
+    self.removeListener("response", onResponse);
+    self.removeListener("close", onClose);
+    responseToClean = responseStream;
+    if (!responseToClean || responseToClean.complete || !isFunction(responseToClean.once)) {
+      cleanUp();
+    }
+    else {
+      responseToClean.once("end", onResponseComplete);
+      responseToClean.once("close", onResponseComplete);
+      responseToClean.once("error", onResponseComplete);
+      responseToClean.once("aborted", onResponseComplete);
+    }
+  }
+
+  function onResponse(responseStream) {
+    clearTimer();
+    attachResponseCleanup(responseStream);
+  }
+
+  function onResponseComplete() {
+    cleanUp();
+  }
+
+  // A writable request can close before its response arrives
+  function onClose() {
+    clearTimer();
+    self.removeListener("close", onClose);
   }
 
   // Attach callback if passed
@@ -272,10 +333,15 @@ RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
 
   // Clean up on events
   this.on("socket", destroyOnTimeout);
-  this.on("abort", clearTimer);
-  this.on("error", clearTimer);
-  this.on("response", clearTimer);
-  this.on("close", clearTimer);
+  this.on("abort", cleanUp);
+  this.on("error", cleanUp);
+  this.on("response", onResponse);
+  this.on("close", onClose);
+
+  // setTimeout can also be called from the response callback
+  if (this._response) {
+    attachResponseCleanup(this._response);
+  }
 
   return this;
 };
@@ -430,6 +496,7 @@ RedirectableRequest.prototype._processResponse = function (response) {
       statusCode < 300 || statusCode >= 400) {
     response.responseUrl = this._currentUrl;
     response.redirects = this._redirects;
+    this._response = response;
     this.emit("response", response);
 
     // Clean up

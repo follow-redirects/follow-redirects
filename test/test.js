@@ -684,6 +684,197 @@ describe("follow-redirects", function () {
     });
   });
 
+  it("does not destroy a reused socket after the request timeout is cleared", function () {
+    this.timeout(10000);
+    if (nodeMajorVersion < 19) {
+      this.skip();
+    }
+
+    var requestCount = 0;
+    var socketTimeoutCount = 0;
+    var sharedSocket;
+    var agent = new http.Agent({ keepAlive: true, timeout: 1000 });
+
+    app.get("/timeout", function (req, res) {
+      requestCount++;
+      setTimeout(function () {
+        res.end("ok");
+      }, requestCount % 2 === 1 ? 100 : 1500);
+    });
+
+    function makeRequest(timeout, timeoutTiming) {
+      return new Promise(function (resolve, reject) {
+        var req = http.get({
+          hostname: "localhost",
+          port: 3600,
+          path: "/timeout",
+          agent: agent,
+        }, function (res) {
+          if (timeout && timeoutTiming === "header") {
+            req.setTimeout(timeout);
+          }
+          res.resume();
+          res.on("end", function () {
+            if (timeout && timeoutTiming === "end") {
+              req.setTimeout(timeout);
+            }
+            resolve();
+          });
+        });
+        req.on("socket", function (socket) {
+          if (!sharedSocket) {
+            sharedSocket = socket;
+            socket.on("timeout", function () {
+              socketTimeoutCount++;
+            });
+          }
+          else {
+            assert.strictEqual(socket, sharedSocket);
+          }
+        });
+        req.on("error", reject);
+        if (timeout && timeoutTiming === "before") {
+          req.setTimeout(timeout);
+          req.setTimeout(timeout);
+        }
+      });
+    }
+
+    function destroyAgent() {
+      agent.destroy();
+    }
+
+    return server.start(app)
+      .then(function () {
+        return makeRequest(5000, "before");
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 1);
+        return makeRequest();
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 2);
+        assert.strictEqual(socketTimeoutCount, 1);
+        return makeRequest(5000, "header");
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 3);
+        return makeRequest();
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 4);
+        assert.strictEqual(socketTimeoutCount, 2);
+        return makeRequest(5000, "end");
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 5);
+        return makeRequest();
+      })
+      .then(function () {
+        assert.strictEqual(requestCount, 6);
+        assert.strictEqual(socketTimeoutCount, 3);
+      })
+      .then(function () {
+        destroyAgent();
+      }, function (error) {
+        destroyAgent();
+        throw error;
+      });
+  });
+
+  it("destroys a socket that times out while reading the response body", function () {
+    app.get("/timeout-body", function (req, res) {
+      res.writeHead(200, { "content-length": "2" });
+      res.write("a");
+      setTimeout(function () {
+        res.end("b");
+      }, 500);
+    });
+
+    return server.start(app)
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          var timeoutCallbackCount = 0;
+          var watchdog = setTimeout(function () {
+            reject(new Error("response body did not time out"));
+          }, 2000);
+          var req = http.get("http://localhost:3600/timeout-body", function (res) {
+            req.setTimeout(100, function () {
+              timeoutCallbackCount++;
+            });
+            res.resume();
+            res.on("end", function () {
+              clearTimeout(watchdog);
+              reject(new Error("response body should have timed out"));
+            });
+            res.on("aborted", function () {
+              clearTimeout(watchdog);
+              resolve({ aborted: true, timeoutCallbackCount: timeoutCallbackCount });
+            });
+          });
+          req.on("error", function (error) {
+            if (error.code === "ECONNRESET") {
+              clearTimeout(watchdog);
+              resolve({ error: error });
+            }
+            else {
+              clearTimeout(watchdog);
+              reject(error);
+            }
+          });
+        });
+      })
+      .then(function (result) {
+        assert(result.aborted || result.error && result.error.code === "ECONNRESET");
+        assert.strictEqual(result.timeoutCallbackCount, 1);
+      });
+  });
+
+  it("moves its timeout listener to the redirected request socket", function () {
+    app.get("/redirect-timeout", redirectsTo("http://localhost:3602/final"));
+    app2.get("/final", sendsJson({ ok: true }));
+
+    var sockets = [];
+    var userTimeoutCount = 0;
+    var agent = new http.Agent({ keepAlive: true });
+
+    function onSocketTimeout() {
+      userTimeoutCount++;
+    }
+
+    return Promise.all([
+      server.start(app),
+      server.start({ app: app2, port: 3602 }),
+    ])
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          var req = http.get("http://localhost:3600/redirect-timeout", { agent: agent }, function (res) {
+            res.resume();
+            res.on("end", resolve);
+          });
+          req.on("error", reject);
+          req.setTimeout(5000);
+          req.on("socket", function (socket) {
+            if (sockets.indexOf(socket) < 0) {
+              sockets.push(socket);
+              socket.on("timeout", onSocketTimeout);
+            }
+          });
+        });
+      })
+      .then(function () {
+        assert.strictEqual(sockets.length, 2);
+        assert.strictEqual(userTimeoutCount, 0);
+        sockets.forEach(function (socket) {
+          assert(socket.listeners("timeout").indexOf(onSocketTimeout) >= 0);
+        });
+        agent.destroy();
+      }, function (error) {
+        agent.destroy();
+        throw error;
+      });
+  });
+
   it("should follow redirects over https", function () {
     app.get("/a", redirectsTo("/b"));
     app.get("/b", redirectsTo("/c"));
