@@ -64,6 +64,11 @@ module.exports = function (defaultPorts) {
       if (server.closeIdleConnections) {
         server.closeIdleConnections();
       }
+      // Node 24 can keep an aborted request's socket open,
+      // which makes server.close() wait forever
+      if (server.closeAllConnections) {
+        server.closeAllConnections();
+      }
       server.close(function (error) {
         return error ? reject(error) : resolve();
       });
