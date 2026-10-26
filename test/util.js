@@ -47,7 +47,7 @@ function asPromise(cb) {
 
 function proxy(proxyHost) {
   return function (req, res) {
-    var upstreamUrl = url.parse(req.originalUrl);
+    var upstreamUrl = new url.URL(req.originalUrl);
     if (upstreamUrl.host === proxyHost) {
       res.writeHead(400, "Bad request");
       res.write(JSON.stringify({ bad: "detected proxy recursion" }));

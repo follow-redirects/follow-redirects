@@ -31,7 +31,7 @@ module.exports = function (defaultPorts) {
 
       // Set up CONNECT functionality
       server.on("connect", (req, clientSocket, head) => {
-        var remote = url.parse("http://" + req.url);
+        var remote = new url.URL("http://" + req.url);
         var remoteSocket = net.connect(remote.port, remote.hostname, function () {
           clientSocket.write("HTTP/1.1 200 Connection Established\r\n" +
                               "Proxy-agent: Test proxy\r\n" +
