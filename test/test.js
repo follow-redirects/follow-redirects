@@ -1538,11 +1538,13 @@ describe("follow-redirects", function () {
     "SENSITIVE-A",
     "X-Sensitive-B",
     "x-sensitive-b",
+    "!#$%&'*+-.^_`|~abc123",
   ].forEach(function (header) {
     var sensitiveHeaders = [
       "Sensitive-A",
       "x-sensitive-b",
-      "^$.*+?()[]{}|/", // test RegExp escapes
+      "!#$%&'*+-.^_`|~abc123", // tchar from RFC7230
+      "^$.*+?()[]{}|/", // RegExp escapes
     ];
 
     describe("when the client passes an header named " + header, function () {
