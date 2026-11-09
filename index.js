@@ -160,9 +160,12 @@ RedirectableRequest.prototype.write = function (data, encoding, callback) {
     }
     return;
   }
+  // Determine the number of bytes that will be sent (strings may be multibyte)
+  var dataLength = isString(data) ? Buffer.byteLength(String(data), encoding) : data.length;
+
   // Only write when we don't exceed the maximum body length
-  if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
-    this._requestBodyLength += data.length;
+  if (this._requestBodyLength + dataLength <= this._options.maxBodyLength) {
+    this._requestBodyLength += dataLength;
     this._requestBodyBuffers.push({ data: data, encoding: encoding });
     this._currentRequest.write(data, encoding, callback);
   }

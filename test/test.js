@@ -1378,6 +1378,51 @@ describe("follow-redirects", function () {
           assert.equal(error.message, "Request body larger than maxBodyLength limit");
         });
     });
+
+    it("counts bytes rather than characters for multibyte strings on write", function () {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+      opts.maxBodyLength = 10;
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, reject);
+          req.on("error", resolve);
+          req.write("\u00e9\u00e9\u00e9\u00e9"); // 4 characters, 8 bytes
+          req.end("\u00e9\u00e9\u00e9\u00e9"); // 4 characters, 8 bytes
+        }))
+        .then(function (error) {
+          assert(error instanceof Error);
+          assert.equal(error.code, "ERR_FR_MAX_BODY_LENGTH_EXCEEDED");
+          assert.equal(error.message, "Request body larger than maxBodyLength limit");
+        });
+    });
+
+    it("allows multibyte strings that fit within the byte limit", function () {
+      app.post("/a", function (req, res) {
+        req.pipe(res);
+      });
+      var opts = url.parse("http://localhost:3600/a");
+      opts.method = "POST";
+      opts.maxBodyLength = 10;
+
+      return server.start(app)
+        .then(asPromise(function (resolve, reject) {
+          var req = http.request(opts, function (res) {
+            res.pipe(concat(function (body) {
+              resolve(body.toString());
+            }));
+          });
+          req.on("error", reject);
+          req.end("\u00e9\u00e9\u00e9\u00e9"); // 4 characters, 8 bytes
+        }))
+        .then(function (body) {
+          assert.equal(body, "\u00e9\u00e9\u00e9\u00e9");
+        });
+    });
   });
 
   describe("writing invalid data", function () {
