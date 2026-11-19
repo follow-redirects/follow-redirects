@@ -15,10 +15,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22.0'
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: npm ci
       - run: npm run lint
 
@@ -57,12 +57,14 @@ jobs:
           - '22.x'
           - '24.0'
           - '24.x'
+          - '26.0'
+          - '26.x'
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: npm install
       - if: ${{ matrix.node-version == '4.x' }}
         run: npm install mocha@5.0.0 nyc@11.8.0
